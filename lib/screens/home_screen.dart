@@ -26,12 +26,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> fetchApps() async {
     try {
       final res = await http.get(Uri.parse("http://10.0.2.2:3000/api/apps"));
-
       if (!mounted) return;
-
       if (res.statusCode == 200) {
         final List data = json.decode(res.body);
-
         setState(() {
           apps = data.map((e) => AppModel.fromJson(e)).toList();
           loading = false;
@@ -113,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 "http://10.0.2.2:3000${app.iconUrl}",
                 width: 50,
                 height: 50,
-                errorBuilder: (_, __, ___) => const Icon(Icons.image),
+                errorBuilder: (_, _, _) => const Icon(Icons.image),
               ),
               title: Text(app.name),
               subtitle: Text(app.description),

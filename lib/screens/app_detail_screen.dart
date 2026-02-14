@@ -16,6 +16,10 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
   List<String> screenshots = [];
   bool loadingScreenshots = true;
 
+  bool installed = false;
+  bool wishlisted = false;
+  bool bookmarked = false;
+
   @override
   void initState() {
     super.initState();
@@ -62,6 +66,18 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
     }
   }
 
+  void fakeInstall() {
+    setState(() => installed = !installed);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          installed ? "Installing... (demo only)" : "Uninstalled (demo only)",
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -76,7 +92,6 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ICON + BASIC INFO
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -87,7 +102,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                     width: 90,
                     height: 90,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
+                    errorBuilder: (_, _, _) =>
                         const Icon(Icons.image, size: 80),
                   ),
                 ),
@@ -111,9 +126,39 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
               ],
             ),
 
+            const SizedBox(height: 16),
+
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: fakeInstall,
+                    child: Text(installed ? "Uninstall" : "Install"),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                IconButton(
+                  icon: Icon(
+                    wishlisted ? Icons.favorite : Icons.favorite_border,
+                    color: wishlisted ? Colors.red : null,
+                  ),
+                  onPressed: () {
+                    setState(() => wishlisted = !wishlisted);
+                  },
+                ),
+                IconButton(
+                  icon: Icon(
+                    bookmarked ? Icons.bookmark : Icons.bookmark_border,
+                  ),
+                  onPressed: () {
+                    setState(() => bookmarked = !bookmarked);
+                  },
+                ),
+              ],
+            ),
+
             const SizedBox(height: 24),
 
-            // SCREENSHOTS
             const Text(
               "Screenshots",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
