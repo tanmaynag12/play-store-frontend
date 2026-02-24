@@ -1,11 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:play_store_app/config/api_config.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://10.0.2.2:3000/api';
-
   static Future<List<dynamic>> fetchApps() async {
-    final response = await http.get(Uri.parse('$baseUrl/apps'));
+    final response = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/apps'));
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);

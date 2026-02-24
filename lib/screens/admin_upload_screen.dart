@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:play_store_app/config/api_config.dart';
 
 class AdminUploadScreen extends StatefulWidget {
   const AdminUploadScreen({super.key});
@@ -47,7 +48,7 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
 
     final request = http.MultipartRequest(
       "POST",
-      Uri.parse("http://10.0.2.2:3000/api/admin/apps"),
+      Uri.parse("${ApiConfig.baseUrl}/api/apps"),
     );
 
     request.headers["x-api-key"] = "apikey123";
