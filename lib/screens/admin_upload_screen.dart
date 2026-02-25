@@ -2,10 +2,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:play_store_app/config/api_config.dart';
+import '../providers/auth_provider.dart';
+import '../models/app_model.dart';
 
 class AdminUploadScreen extends StatefulWidget {
-  const AdminUploadScreen({super.key});
+  final AppModel? app; // null = create, not null = edit
+
+  const AdminUploadScreen({super.key, this.app});
 
   @override
   State<AdminUploadScreen> createState() => _AdminUploadScreenState();
@@ -24,6 +29,21 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
   final picker = ImagePicker();
   bool uploading = false;
 
+  bool get isEdit => widget.app != null;
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (isEdit) {
+      nameController.text = widget.app!.name;
+      descController.text = widget.app!.description;
+      versionController.text = widget.app!.version ?? "";
+      sizeController.text = widget.app!.size ?? "";
+      developerController.text = widget.app!.developer ?? "";
+    }
+  }
+
   Future<void> pickImages() async {
     final pickedIcon = await picker.pickImage(source: ImageSource.gallery);
     final pickedScreens = await picker.pickMultiImage();
@@ -36,22 +56,21 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
     }
   }
 
-  Future<void> uploadApp() async {
-    if (icon == null || screenshots.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Pick icon and screenshots first")),
-      );
-      return;
-    }
+  Future<void> submit() async {
+    final auth = context.read<AuthProvider>();
+    final token = auth.token;
+
+    if (token == null) return;
 
     setState(() => uploading = true);
 
-    final request = http.MultipartRequest(
-      "POST",
-      Uri.parse("${ApiConfig.baseUrl}/api/apps"),
-    );
+    final uri = isEdit
+        ? Uri.parse("${ApiConfig.baseUrl}/api/admin/apps/${widget.app!.id}")
+        : Uri.parse("${ApiConfig.baseUrl}/api/admin/apps");
 
-    request.headers["x-api-key"] = "apikey123";
+    final request = http.MultipartRequest(isEdit ? "PUT" : "POST", uri);
+
+    request.headers["Authorization"] = "Bearer $token";
 
     request.fields["name"] = nameController.text;
     request.fields["description"] = descController.text;
@@ -59,7 +78,9 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
     request.fields["size"] = sizeController.text;
     request.fields["developer"] = developerController.text;
 
-    request.files.add(await http.MultipartFile.fromPath("icon", icon!.path));
+    if (icon != null) {
+      request.files.add(await http.MultipartFile.fromPath("icon", icon!.path));
+    }
 
     for (final file in screenshots) {
       request.files.add(
@@ -73,14 +94,22 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
 
     if (!mounted) return;
 
-    if (response.statusCode == 201) {
+    if (response.statusCode == 201 || response.statusCode == 200) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("App uploaded successfully")),
+        SnackBar(
+          content: Text(
+            isEdit ? "App updated successfully" : "App uploaded successfully",
+          ),
+          backgroundColor: Colors.green,
+        ),
       );
-      Navigator.pop(context);
+      Navigator.pop(context, true);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Upload failed: ${response.statusCode}")),
+        SnackBar(
+          content: Text("Operation failed: ${response.statusCode}"),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -88,7 +117,11 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Upload App (Admin)")),
+      appBar: AppBar(
+        title: Text(isEdit ? "Edit App (Admin)" : "Upload App (Admin)"),
+        backgroundColor: Colors.green.shade700,
+        foregroundColor: Colors.white,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
@@ -113,25 +146,20 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
               controller: developerController,
               decoration: const InputDecoration(labelText: "Developer"),
             ),
-
             const SizedBox(height: 20),
-
             ElevatedButton(
               onPressed: uploading ? null : pickImages,
               child: const Text("Pick Icon & Screenshots"),
             ),
-
-            if (icon != null) const Text("Icon selected ✔"),
+            if (icon != null) const Text("New icon selected ✔"),
             if (screenshots.isNotEmpty)
-              Text("${screenshots.length} screenshots selected ✔"),
-
+              Text("${screenshots.length} new screenshots selected ✔"),
             const SizedBox(height: 20),
-
             ElevatedButton(
-              onPressed: uploading ? null : uploadApp,
+              onPressed: uploading ? null : submit,
               child: uploading
                   ? const CircularProgressIndicator()
-                  : const Text("Upload App"),
+                  : Text(isEdit ? "Update App" : "Upload App"),
             ),
           ],
         ),

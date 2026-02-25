@@ -1,9 +1,11 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import '../models/app_model.dart';
+import '../services/api_service.dart';
+import '../providers/auth_provider.dart';
 import 'app_detail_screen.dart';
 import 'admin_upload_screen.dart';
+import 'login_screen.dart';
 import 'package:play_store_app/config/api_config.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -26,21 +28,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> fetchApps() async {
     try {
-      final res = await http.get(Uri.parse("${ApiConfig.baseUrl}/api/apps"));
+      final data = await ApiService.fetchApps();
+
       if (!mounted) return;
-      if (res.statusCode == 200) {
-        final List data = json.decode(res.body);
-        setState(() {
-          apps = data.map((e) => AppModel.fromJson(e)).toList();
-          loading = false;
-          error = "";
-        });
-      } else {
-        setState(() {
-          error = "Failed to load apps (${res.statusCode})";
-          loading = false;
-        });
-      }
+
+      setState(() {
+        apps = data.map((e) => AppModel.fromJson(e)).toList();
+        loading = false;
+        error = "";
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -50,8 +46,26 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _requireLogin(BuildContext context, VoidCallback action) {
+    final auth = context.read<AuthProvider>();
+
+    if (!auth.isLoggedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please login to continue.')),
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+    } else {
+      action();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
     if (loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -71,36 +85,53 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    if (apps.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(title: const Text("Apps")),
-        body: const Center(
-          child: Text(
-            "No apps uploaded yet.\nTap admin icon to add one.",
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
-    }
     final width = MediaQuery.of(context).size.width;
     final isDesktop = width > 900;
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.green.shade700,
+        foregroundColor: Colors.white,
         title: const Text("Apps"),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.admin_panel_settings),
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AdminUploadScreen()),
-              );
-              fetchApps();
-            },
-          ),
+          // Login / Logout
+          auth.isLoggedIn
+              ? PopupMenuButton(
+                  icon: const Icon(Icons.account_circle),
+                  itemBuilder: (_) => [
+                    PopupMenuItem(
+                      child: const Text('Logout'),
+                      onTap: () => auth.logout(),
+                    ),
+                  ],
+                )
+              : TextButton.icon(
+                  icon: const Icon(Icons.login, color: Colors.white),
+                  label: const Text(
+                    'Login',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  ),
+                ),
+
+          // Admin-only upload button
+          if (auth.isAdmin)
+            IconButton(
+              icon: const Icon(Icons.admin_panel_settings),
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AdminUploadScreen()),
+                );
+                fetchApps();
+              },
+            ),
         ],
       ),
+
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1200),

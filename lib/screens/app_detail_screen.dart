@@ -1,7 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import '../models/app_model.dart';
+import '../models/rating_model.dart';
+import '../services/rating_service.dart';
+import '../providers/auth_provider.dart';
+import 'admin_upload_screen.dart';
 import 'package:play_store_app/config/api_config.dart';
 
 class AppDetailScreen extends StatefulWidget {
@@ -14,8 +19,15 @@ class AppDetailScreen extends StatefulWidget {
 }
 
 class _AppDetailScreenState extends State<AppDetailScreen> {
+  late AppModel currentApp;
+
+  final RatingService _ratingService = RatingService();
+
   List<String> screenshots = [];
   bool loadingScreenshots = true;
+
+  List<RatingModel> ratings = [];
+  bool loadingRatings = true;
 
   bool installed = false;
   bool wishlisted = false;
@@ -24,10 +36,12 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
   @override
   void initState() {
     super.initState();
-    fetchScreenshots();
+    currentApp = widget.app;
+    fetchAppDetails();
+    fetchRatings();
   }
 
-  Future<void> fetchScreenshots() async {
+  Future<void> fetchAppDetails() async {
     try {
       final res = await http.get(
         Uri.parse("${ApiConfig.baseUrl}/api/apps/${widget.app.id}"),
@@ -37,9 +51,12 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
         final data = json.decode(res.body);
 
         setState(() {
+          currentApp = AppModel.fromJson(data);
+
           screenshots = (data["screenshots"] as List)
               .map((e) => "${ApiConfig.baseUrl}$e")
               .toList();
+
           loadingScreenshots = false;
         });
       } else {
@@ -50,37 +67,66 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
     }
   }
 
+  Future<void> fetchRatings() async {
+    try {
+      final result = await _ratingService.getRatings(currentApp.id);
+
+      if (!mounted) return;
+
+      setState(() {
+        ratings = result;
+        loadingRatings = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => loadingRatings = false);
+    }
+  }
+
   Future<void> deleteApp() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Delete App"),
+        content: const Text(
+          "Are you sure you want to delete this app? This action cannot be undone.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    final auth = context.read<AuthProvider>();
+    final token = auth.token;
+    if (token == null) return;
+
     final res = await http.delete(
       Uri.parse("${ApiConfig.baseUrl}/api/admin/apps/${widget.app.id}"),
-      headers: {"x-api-key": "apikey123"},
+      headers: {"Authorization": "Bearer $token"},
     );
 
     if (!mounted) return;
 
     if (res.statusCode == 200) {
       Navigator.pop(context, true);
-    } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Failed to delete app")));
     }
-  }
-
-  void fakeInstall() {
-    setState(() => installed = !installed);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          installed ? "Installing... (demo only)" : "Uninstalled (demo only)",
-        ),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
@@ -88,11 +134,29 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
         title: Text(
-          widget.app.name,
+          currentApp.name,
           style: const TextStyle(color: Colors.black),
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.delete), onPressed: deleteApp),
+          if (auth.isAdmin) ...[
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AdminUploadScreen(app: currentApp),
+                  ),
+                );
+
+                if (result == true && mounted) {
+                  fetchAppDetails();
+                  fetchRatings();
+                }
+              },
+            ),
+            IconButton(icon: const Icon(Icons.delete), onPressed: deleteApp),
+          ],
         ],
       ),
       body: Center(
@@ -127,12 +191,10 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
             ClipRRect(
               borderRadius: BorderRadius.circular(24),
               child: Image.network(
-                "${ApiConfig.baseUrl}${widget.app.iconUrl}",
+                "${ApiConfig.baseUrl}${currentApp.iconUrl}",
                 width: 120,
                 height: 120,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    const Icon(Icons.image, size: 100),
               ),
             ),
             const SizedBox(width: 20),
@@ -141,7 +203,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.app.name,
+                    currentApp.name,
                     style: const TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
@@ -149,15 +211,15 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    widget.app.developer ?? "Unknown Developer",
+                    currentApp.developer ?? "Unknown Developer",
                     style: const TextStyle(
                       color: Colors.green,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Text("Version: ${widget.app.version ?? 'N/A'}"),
-                  Text("Size: ${widget.app.size ?? 'N/A'}"),
+                  Text("Version: ${currentApp.version ?? 'N/A'}"),
+                  Text("Size: ${currentApp.size ?? 'N/A'}"),
                 ],
               ),
             ),
@@ -167,21 +229,10 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
         Row(
           children: [
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 14,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-              onPressed: fakeInstall,
-              child: Text(
-                installed ? "Uninstall" : "Install",
-                style: const TextStyle(fontSize: 16),
-              ),
+              onPressed: () {
+                setState(() => installed = !installed);
+              },
+              child: Text(installed ? "Uninstall" : "Install"),
             ),
             const SizedBox(width: 16),
             IconButton(
@@ -192,10 +243,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
               onPressed: () => setState(() => wishlisted = !wishlisted),
             ),
             IconButton(
-              icon: Icon(
-                bookmarked ? Icons.bookmark : Icons.bookmark_border,
-                color: Colors.grey,
-              ),
+              icon: Icon(bookmarked ? Icons.bookmark : Icons.bookmark_border),
               onPressed: () => setState(() => bookmarked = !bookmarked),
             ),
           ],
@@ -203,10 +251,15 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
         const SizedBox(height: 32),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: const [
-            _StatItem(label: "4.5★", sub: "1K reviews"),
-            _StatItem(label: "10K+", sub: "Downloads"),
-            _StatItem(label: "3+", sub: "Rated for"),
+          children: [
+            _StatItem(
+              label: currentApp.averageRating != null
+                  ? "${currentApp.averageRating}★"
+                  : "0★",
+              sub: "${currentApp.totalReviews} reviews",
+            ),
+            const _StatItem(label: "10K+", sub: "Downloads"),
+            const _StatItem(label: "3+", sub: "Rated for"),
           ],
         ),
       ],
@@ -222,63 +275,34 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 24),
-
         if (loadingScreenshots)
-          const Center(child: CircularProgressIndicator())
+          const CircularProgressIndicator()
         else if (screenshots.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: SizedBox(
-              height: 300,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: screenshots.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 20),
-                itemBuilder: (context, index) {
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Image.network(
-                      screenshots[index],
-                      width: 160,
-                      height: 280,
-                      fit: BoxFit.cover,
-                    ),
-                  );
-                },
-              ),
-            ),
-          )
-        else
-          Container(
-            height: 200,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.image_not_supported, size: 60, color: Colors.grey),
-                  SizedBox(height: 12),
-                  Text(
-                    "No screenshots available",
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
+          SizedBox(
+            height: 300,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: screenshots.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 20),
+                  child: Image.network(
+                    screenshots[index],
+                    width: 160,
+                    height: 280,
+                    fit: BoxFit.cover,
                   ),
-                ],
-              ),
+                );
+              },
             ),
           ),
-
         const SizedBox(height: 48),
-
         const Text(
           "About this app",
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
-        Text(widget.app.description, style: const TextStyle(fontSize: 16)),
+        Text(currentApp.description),
       ],
     );
   }

@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'providers/auth_provider.dart';
 import 'screens/home_screen.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final authProvider = AuthProvider();
+
+  await authProvider.restoreSession();
+
+  runApp(
+    ChangeNotifierProvider.value(value: authProvider, child: const MyApp()),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -13,6 +23,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Play Store Clone',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        useMaterial3: true,
+      ),
       home: const HomeScreen(),
     );
   }

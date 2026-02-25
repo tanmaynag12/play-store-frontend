@@ -6,6 +6,8 @@ class AppModel {
   final String? version;
   final String? size;
   final String? developer;
+  final double? averageRating;
+  final int totalReviews;
 
   AppModel({
     required this.id,
@@ -15,6 +17,8 @@ class AppModel {
     this.version,
     this.size,
     this.developer,
+    this.averageRating,
+    this.totalReviews = 0,
   });
 
   factory AppModel.fromJson(Map<String, dynamic> json) {
@@ -26,6 +30,10 @@ class AppModel {
       version: json['version'],
       size: json['size'],
       developer: json['developer'],
+      averageRating: json['average_rating'] != null
+          ? (json['average_rating'] as num).toDouble()
+          : null,
+      totalReviews: json['total_reviews'] ?? 0,
     );
   }
 }
