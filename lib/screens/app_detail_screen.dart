@@ -8,6 +8,7 @@ import '../services/rating_service.dart';
 import '../providers/auth_provider.dart';
 import 'admin_upload_screen.dart';
 import 'package:play_store_app/config/api_config.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AppDetailScreen extends StatefulWidget {
   final AppModel app;
@@ -29,9 +30,15 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
   List<RatingModel> ratings = [];
   bool loadingRatings = true;
 
+  RatingModel? userRating;
+
   bool installed = false;
   bool wishlisted = false;
   bool bookmarked = false;
+
+  int selectedRating = 0;
+  TextEditingController reviewController = TextEditingController();
+  bool submittingRating = false;
 
   @override
   void initState() {
@@ -39,6 +46,12 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
     currentApp = widget.app;
     fetchAppDetails();
     fetchRatings();
+  }
+
+  @override
+  void dispose() {
+    reviewController.dispose();
+    super.dispose();
   }
 
   Future<void> fetchAppDetails() async {
@@ -52,11 +65,9 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
 
         setState(() {
           currentApp = AppModel.fromJson(data);
-
           screenshots = (data["screenshots"] as List)
               .map((e) => "${ApiConfig.baseUrl}$e")
               .toList();
-
           loadingScreenshots = false;
         });
       } else {
@@ -67,14 +78,46 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
     }
   }
 
+  Future<void> installApp() async {
+    final url = Uri.parse(
+      "${ApiConfig.baseUrl}/api/apps/${currentApp.id}/download",
+    );
+
+    final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+
+    if (!launched) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Could not start download")));
+      return;
+    }
+
+    await Future.delayed(const Duration(seconds: 1));
+    await fetchAppDetails();
+  }
+
   Future<void> fetchRatings() async {
     try {
       final result = await _ratingService.getRatings(currentApp.id);
+      final auth = context.read<AuthProvider>();
 
-      if (!mounted) return;
+      RatingModel? existing;
+
+      if (auth.user?.id != null) {
+        try {
+          existing = result.firstWhere((r) => r.userId == auth.user!.id);
+        } catch (_) {}
+      }
 
       setState(() {
         ratings = result;
+        userRating = existing;
+
+        if (existing != null) {
+          selectedRating = existing.rating;
+          reviewController.text = existing.reviewText ?? "";
+        }
+
         loadingRatings = false;
       });
     } catch (_) {
@@ -83,43 +126,88 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
     }
   }
 
-  Future<void> deleteApp() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Delete App"),
-        content: const Text(
-          "Are you sure you want to delete this app? This action cannot be undone.",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
+  Widget _buildStarPicker() {
+    return Row(
+      children: List.generate(5, (index) {
+        final starIndex = index + 1;
+        return IconButton(
+          icon: Icon(
+            starIndex <= selectedRating ? Icons.star : Icons.star_border,
+            color: Colors.amber,
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("Delete"),
-          ),
-        ],
-      ),
+          onPressed: () {
+            setState(() {
+              selectedRating = starIndex;
+            });
+          },
+        );
+      }),
     );
+  }
 
-    if (confirm != true) return;
+  Future<void> submitRating() async {
+    if (selectedRating == 0) return;
 
     final auth = context.read<AuthProvider>();
-    final token = auth.token;
-    if (token == null) return;
 
-    final res = await http.delete(
-      Uri.parse("${ApiConfig.baseUrl}/api/admin/apps/${widget.app.id}"),
-      headers: {"Authorization": "Bearer $token"},
+    if (!auth.isLoggedIn) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Please login to rate.")));
+      return;
+    }
+
+    setState(() => submittingRating = true);
+
+    final response = await http.post(
+      Uri.parse("${ApiConfig.baseUrl}/api/apps/${currentApp.id}/rate"),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer ${auth.token}",
+      },
+      body: jsonEncode({
+        "rating": selectedRating,
+        "review_text": reviewController.text.trim(),
+      }),
     );
 
-    if (!mounted) return;
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      await fetchAppDetails();
+      await fetchRatings();
 
-    if (res.statusCode == 200) {
-      Navigator.pop(context, true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            userRating != null ? "Review updated." : "Review submitted.",
+          ),
+        ),
+      );
+    }
+
+    setState(() => submittingRating = false);
+  }
+
+  Future<void> deleteRating() async {
+    final auth = context.read<AuthProvider>();
+
+    final response = await http.delete(
+      Uri.parse("${ApiConfig.baseUrl}/api/apps/${currentApp.id}/rate"),
+      headers: {"Authorization": "Bearer ${auth.token}"},
+    );
+
+    if (response.statusCode == 200) {
+      await fetchAppDetails();
+      await fetchRatings();
+
+      setState(() {
+        selectedRating = 0;
+        reviewController.clear();
+        userRating = null;
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Review deleted.")));
     }
   }
 
@@ -155,7 +243,6 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                 }
               },
             ),
-            IconButton(icon: const Icon(Icons.delete), onPressed: deleteApp),
           ],
         ],
       ),
@@ -169,9 +256,55 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _leftPanel(),
+                  const SizedBox(height: 40),
+
+                  const Text(
+                    "Rate this app",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+
+                  _buildStarPicker(),
+
+                  TextField(
+                    controller: reviewController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      hintText: "Write a review (optional)",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  ElevatedButton(
+                    onPressed: submittingRating ? null : submitRating,
+                    child: submittingRating
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(
+                            userRating != null
+                                ? "Update Review"
+                                : "Submit Review",
+                          ),
+                  ),
+
+                  if (userRating != null)
+                    TextButton(
+                      onPressed: deleteRating,
+                      child: const Text(
+                        "Delete Review",
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+
                   const SizedBox(height: 48),
                   const Divider(thickness: 1),
                   const SizedBox(height: 48),
+
                   _rightPanel(),
                 ],
               ),
@@ -220,35 +353,18 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                   const SizedBox(height: 12),
                   Text("Version: ${currentApp.version ?? 'N/A'}"),
                   Text("Size: ${currentApp.size ?? 'N/A'}"),
+                  const SizedBox(height: 20),
+
+                  ElevatedButton(
+                    onPressed: installApp,
+                    child: const Text("Install"),
+                  ),
                 ],
               ),
             ),
           ],
         ),
         const SizedBox(height: 28),
-        Row(
-          children: [
-            ElevatedButton(
-              onPressed: () {
-                setState(() => installed = !installed);
-              },
-              child: Text(installed ? "Uninstall" : "Install"),
-            ),
-            const SizedBox(width: 16),
-            IconButton(
-              icon: Icon(
-                wishlisted ? Icons.favorite : Icons.favorite_border,
-                color: wishlisted ? Colors.red : Colors.grey,
-              ),
-              onPressed: () => setState(() => wishlisted = !wishlisted),
-            ),
-            IconButton(
-              icon: Icon(bookmarked ? Icons.bookmark : Icons.bookmark_border),
-              onPressed: () => setState(() => bookmarked = !bookmarked),
-            ),
-          ],
-        ),
-        const SizedBox(height: 32),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
@@ -258,8 +374,11 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                   : "0★",
               sub: "${currentApp.totalReviews} reviews",
             ),
-            const _StatItem(label: "10K+", sub: "Downloads"),
-            const _StatItem(label: "3+", sub: "Rated for"),
+            _StatItem(
+              label: "${currentApp.downloadCount ?? 0}",
+              sub: "Downloads",
+            ),
+            _StatItem(label: currentApp.ratedFor ?? "N/A", sub: "Rated for"),
           ],
         ),
       ],

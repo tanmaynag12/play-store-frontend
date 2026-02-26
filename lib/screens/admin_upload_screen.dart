@@ -6,9 +6,10 @@ import 'package:provider/provider.dart';
 import 'package:play_store_app/config/api_config.dart';
 import '../providers/auth_provider.dart';
 import '../models/app_model.dart';
+import 'package:file_picker/file_picker.dart';
 
 class AdminUploadScreen extends StatefulWidget {
-  final AppModel? app; // null = create, not null = edit
+  final AppModel? app;
 
   const AdminUploadScreen({super.key, this.app});
 
@@ -22,9 +23,11 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
   final versionController = TextEditingController();
   final sizeController = TextEditingController();
   final developerController = TextEditingController();
+  final ratedForController = TextEditingController();
 
   File? icon;
   List<File> screenshots = [];
+  File? apkFile;
 
   final picker = ImagePicker();
   bool uploading = false;
@@ -41,6 +44,31 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
       versionController.text = widget.app!.version ?? "";
       sizeController.text = widget.app!.size ?? "";
       developerController.text = widget.app!.developer ?? "";
+      ratedForController.text = widget.app!.ratedFor ?? "";
+    }
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    descController.dispose();
+    versionController.dispose();
+    sizeController.dispose();
+    developerController.dispose();
+    ratedForController.dispose();
+    super.dispose();
+  }
+
+  Future<void> pickApk() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['apk'],
+    );
+
+    if (result != null) {
+      setState(() {
+        apkFile = File(result.files.single.path!);
+      });
     }
   }
 
@@ -77,6 +105,7 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
     request.fields["version"] = versionController.text;
     request.fields["size"] = sizeController.text;
     request.fields["developer"] = developerController.text;
+    request.fields["rated_for"] = ratedForController.text;
 
     if (icon != null) {
       request.files.add(await http.MultipartFile.fromPath("icon", icon!.path));
@@ -85,6 +114,12 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
     for (final file in screenshots) {
       request.files.add(
         await http.MultipartFile.fromPath("screenshots", file.path),
+      );
+    }
+
+    if (apkFile != null) {
+      request.files.add(
+        await http.MultipartFile.fromPath("apk", apkFile!.path),
       );
     }
 
@@ -146,15 +181,34 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
               controller: developerController,
               decoration: const InputDecoration(labelText: "Developer"),
             ),
+            TextField(
+              controller: ratedForController,
+              decoration: const InputDecoration(
+                labelText: "Rated For (e.g. 3+, 12+)",
+              ),
+            ),
             const SizedBox(height: 20),
+
             ElevatedButton(
               onPressed: uploading ? null : pickImages,
               child: const Text("Pick Icon & Screenshots"),
             ),
+
             if (icon != null) const Text("New icon selected ✔"),
             if (screenshots.isNotEmpty)
               Text("${screenshots.length} new screenshots selected ✔"),
+
+            const SizedBox(height: 12),
+
+            ElevatedButton(
+              onPressed: uploading ? null : pickApk,
+              child: const Text("Pick APK"),
+            ),
+
+            if (apkFile != null) const Text("APK selected ✔"),
+
             const SizedBox(height: 20),
+
             ElevatedButton(
               onPressed: uploading ? null : submit,
               child: uploading

@@ -94,7 +94,6 @@ class _HomeScreenState extends State<HomeScreen> {
         foregroundColor: Colors.white,
         title: const Text("Apps"),
         actions: [
-          // Login / Logout
           auth.isLoggedIn
               ? PopupMenuButton(
                   icon: const Icon(Icons.account_circle),
@@ -116,8 +115,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     MaterialPageRoute(builder: (_) => const LoginScreen()),
                   ),
                 ),
-
-          // Admin-only upload button
           if (auth.isAdmin)
             IconButton(
               icon: const Icon(Icons.admin_panel_settings),
@@ -131,7 +128,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
         ],
       ),
-
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1200),
@@ -185,6 +181,25 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 textAlign: TextAlign.center,
                               ),
+                              const SizedBox(height: 4),
+                              if (app.averageRating != null)
+                                Text(
+                                  "⭐ ${app.averageRating!.toStringAsFixed(1)} (${app.totalReviews} reviews)",
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                )
+                              else
+                                const Text(
+                                  "No ratings yet",
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
                               const SizedBox(height: 6),
                               Text(
                                 app.description,
@@ -214,7 +229,29 @@ class _HomeScreenState extends State<HomeScreen> {
                           errorBuilder: (_, _, _) => const Icon(Icons.image),
                         ),
                         title: Text(app.name),
-                        subtitle: Text(app.description),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (app.averageRating != null)
+                              Text(
+                                "⭐ ${app.averageRating!.toStringAsFixed(1)} (${app.totalReviews} reviews)",
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              )
+                            else
+                              const Text(
+                                "No ratings yet",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            const SizedBox(height: 4),
+                            Text(app.description),
+                          ],
+                        ),
                         onTap: () async {
                           final deleted = await Navigator.push(
                             context,
