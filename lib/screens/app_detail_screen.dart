@@ -9,6 +9,7 @@ import '../providers/auth_provider.dart';
 import 'admin_upload_screen.dart';
 import 'package:play_store_app/config/api_config.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class AppDetailScreen extends StatefulWidget {
   final AppModel app;
@@ -35,6 +36,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
   bool installed = false;
   bool wishlisted = false;
   bool bookmarked = false;
+  bool isDownloading = false;
 
   int selectedRating = 0;
   TextEditingController reviewController = TextEditingController();
@@ -52,6 +54,61 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
   void dispose() {
     reviewController.dispose();
     super.dispose();
+  }
+
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete App"),
+        content: const Text(
+          "Are you sure you want to delete this app? This action cannot be undone.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _deleteApp();
+    }
+  }
+
+  Future<void> _deleteApp() async {
+    final auth = context.read<AuthProvider>();
+
+    final response = await http.delete(
+      Uri.parse("${ApiConfig.baseUrl}/api/admin/apps/${currentApp.id}"),
+      headers: {"Authorization": "Bearer ${auth.token}"},
+    );
+
+    if (!mounted) return;
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("App deleted successfully"),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      Navigator.pop(context, true);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Failed to delete app"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> fetchAppDetails() async {
@@ -79,21 +136,35 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
   }
 
   Future<void> installApp() async {
+    if (isDownloading) return;
+
+    setState(() => isDownloading = true);
+
     final url = Uri.parse(
       "${ApiConfig.baseUrl}/api/apps/${currentApp.id}/download",
     );
 
-    final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+    bool launched = false;
 
-    if (!launched) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Could not start download")));
-      return;
+    if (kIsWeb) {
+      launched = await launchUrl(url, mode: LaunchMode.platformDefault);
+    } else {
+      launched = await launchUrl(url, mode: LaunchMode.externalApplication);
     }
 
-    await Future.delayed(const Duration(seconds: 1));
-    await fetchAppDetails();
+    if (!launched) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Download failed")));
+      }
+    } else {
+      if (launched) {
+        await fetchAppDetails();
+      }
+    }
+
+    setState(() => isDownloading = false);
   }
 
   Future<void> fetchRatings() async {
@@ -215,98 +286,198 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
 
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-        title: Text(
-          currentApp.name,
-          style: const TextStyle(color: Colors.black),
-        ),
-        actions: [
-          if (auth.isAdmin) ...[
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => AdminUploadScreen(app: currentApp),
-                  ),
-                );
-
-                if (result == true && mounted) {
-                  fetchAppDetails();
-                  fetchRatings();
-                }
-              },
-            ),
-          ],
-        ],
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _leftPanel(),
-                  const SizedBox(height: 40),
-
-                  const Text(
-                    "Rate this app",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-
-                  _buildStarPicker(),
-
-                  TextField(
-                    controller: reviewController,
-                    maxLines: 3,
-                    decoration: const InputDecoration(
-                      hintText: "Write a review (optional)",
-                      border: OutlineInputBorder(),
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pop(context, true);
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: Colors.grey[100],
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.black),
+          title: Text(
+            currentApp.name,
+            style: const TextStyle(color: Colors.black),
+          ),
+          actions: [
+            if (auth.isAdmin) ...[
+              IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AdminUploadScreen(app: currentApp),
                     ),
-                  ),
+                  );
 
-                  const SizedBox(height: 12),
-
-                  ElevatedButton(
-                    onPressed: submittingRating ? null : submitRating,
-                    child: submittingRating
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(
-                            userRating != null
-                                ? "Update Review"
-                                : "Submit Review",
-                          ),
-                  ),
-
-                  if (userRating != null)
-                    TextButton(
-                      onPressed: deleteRating,
-                      child: const Text(
-                        "Delete Review",
-                        style: TextStyle(color: Colors.red),
+                  if (result == true && mounted) {
+                    fetchAppDetails();
+                    fetchRatings();
+                  }
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: _confirmDelete,
+              ),
+            ],
+          ],
+        ),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1100),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _leftPanel(),
+                    const SizedBox(height: 40),
+                    const Text(
+                      "Rate this app",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    _buildStarPicker(),
+                    TextField(
+                      controller: reviewController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        hintText: "Write a review (optional)",
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: submittingRating ? null : submitRating,
+                      child: submittingRating
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(
+                              userRating != null
+                                  ? "Update Review"
+                                  : "Submit Review",
+                            ),
+                    ),
+                    if (userRating != null)
+                      TextButton(
+                        onPressed: deleteRating,
+                        child: const Text(
+                          "Delete Review",
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    const SizedBox(height: 48),
+                    const Divider(thickness: 1),
+                    const SizedBox(height: 48),
 
-                  const SizedBox(height: 48),
-                  const Divider(thickness: 1),
-                  const SizedBox(height: 48),
+                    const Text(
+                      "All Reviews",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
 
-                  _rightPanel(),
-                ],
+                    if (loadingRatings)
+                      const CircularProgressIndicator()
+                    else if (ratings.isEmpty)
+                      const Text("No reviews yet")
+                    else
+                      Column(
+                        children: ratings.map((rating) {
+                          final formattedDate =
+                              "${rating.createdAt.day}/${rating.createdAt.month}/${rating.createdAt.year}";
+
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 20,
+                                        backgroundColor: Colors.green.shade300,
+                                        backgroundImage:
+                                            rating.profileImage != null
+                                            ? NetworkImage(
+                                                "${ApiConfig.baseUrl}${rating.profileImage}",
+                                              )
+                                            : null,
+                                        child: rating.profileImage == null
+                                            ? Text(
+                                                rating.userName[0]
+                                                    .toUpperCase(),
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              )
+                                            : null,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              rating.userName,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            Text(
+                                              formattedDate,
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    "⭐ ${rating.rating}",
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  if (rating.reviewText != null &&
+                                      rating.reviewText!.isNotEmpty)
+                                    Text(rating.reviewText!),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+
+                    const SizedBox(height: 48),
+
+                    _rightPanel(),
+                  ],
+                ),
               ),
             ),
           ),
@@ -356,8 +527,14 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                   const SizedBox(height: 20),
 
                   ElevatedButton(
-                    onPressed: installApp,
-                    child: const Text("Install"),
+                    onPressed: isDownloading ? null : installApp,
+                    child: isDownloading
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text("Install"),
                   ),
                 ],
               ),

@@ -5,6 +5,7 @@ class RatingModel {
   final int rating;
   final String? reviewText;
   final DateTime createdAt;
+  final String? profileImage;
 
   RatingModel({
     required this.id,
@@ -13,6 +14,7 @@ class RatingModel {
     required this.rating,
     this.reviewText,
     required this.createdAt,
+    this.profileImage,
   });
 
   factory RatingModel.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class RatingModel {
       rating: json['rating'],
       reviewText: json['review_text'],
       createdAt: DateTime.parse(json['created_at']),
+      profileImage: json['user_profile_image'],
     );
   }
 }
