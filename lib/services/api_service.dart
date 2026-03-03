@@ -21,9 +21,15 @@ class ApiService {
     return headers;
   }
 
-  static Future<List<dynamic>> fetchApps() async {
+  static Future<List<dynamic>> fetchApps({String? search}) async {
+    String url = '${ApiConfig.baseUrl}/api/apps';
+
+    if (search != null && search.isNotEmpty) {
+      url += '?search=$search';
+    }
+
     final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}/api/apps'),
+      Uri.parse(url),
       headers: await _getHeaders(),
     );
 

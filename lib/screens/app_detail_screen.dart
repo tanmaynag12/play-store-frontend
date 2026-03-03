@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -10,6 +12,7 @@ import 'admin_upload_screen.dart';
 import 'package:play_store_app/config/api_config.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import '../services/native_uninstall_service.dart';
 
 class AppDetailScreen extends StatefulWidget {
   final AppModel app;
@@ -48,6 +51,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
     currentApp = widget.app;
     fetchAppDetails();
     fetchRatings();
+    _checkInstalled();
   }
 
   @override
@@ -120,6 +124,8 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
       if (res.statusCode == 200) {
         final data = json.decode(res.body);
 
+        if (!mounted) return;
+
         setState(() {
           currentApp = AppModel.fromJson(data);
           screenshots = (data["screenshots"] as List)
@@ -127,10 +133,14 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
               .toList();
           loadingScreenshots = false;
         });
+
+        await _checkInstalled();
       } else {
-        loadingScreenshots = false;
+        if (!mounted) return;
+        setState(() => loadingScreenshots = false);
       }
     } catch (_) {
+      if (!mounted) return;
       setState(() => loadingScreenshots = false);
     }
   }
@@ -280,6 +290,20 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
         context,
       ).showSnackBar(const SnackBar(content: Text("Review deleted.")));
     }
+  }
+
+  Future<void> _checkInstalled() async {
+    if (kIsWeb) return;
+
+    final result = await NativeUninstallService.isAppInstalled(
+      currentApp.packageName,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      installed = result;
+    });
   }
 
   @override
@@ -525,16 +549,31 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                   Text("Version: ${currentApp.version ?? 'N/A'}"),
                   Text("Size: ${currentApp.size ?? 'N/A'}"),
                   const SizedBox(height: 20),
-
                   ElevatedButton(
-                    onPressed: isDownloading ? null : installApp,
-                    child: isDownloading
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text("Install"),
+                    onPressed: () async {
+                      if (installed) {
+                        if (kIsWeb) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                "Uninstall only works in Android app.",
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+
+                        await NativeUninstallService.uninstallApp(
+                          currentApp.packageName,
+                        );
+                      } else {
+                        await installApp();
+                      }
+
+                      await Future.delayed(const Duration(seconds: 1));
+                      _checkInstalled();
+                    },
+                    child: Text(installed ? "Uninstall" : "Install"),
                   ),
                 ],
               ),
@@ -551,10 +590,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                   : "0★",
               sub: "${currentApp.totalReviews} reviews",
             ),
-            _StatItem(
-              label: "${currentApp.downloadCount ?? 0}",
-              sub: "Downloads",
-            ),
+            _StatItem(label: "${currentApp.downloadCount}", sub: "Downloads"),
             _StatItem(label: currentApp.ratedFor ?? "N/A", sub: "Rated for"),
           ],
         ),

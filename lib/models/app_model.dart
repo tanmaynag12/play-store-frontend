@@ -7,6 +7,8 @@ class AppModel {
   final String? size;
   final String? developer;
   final String? ratedFor;
+  final String packageName;
+  final int versionCode;
 
   final double? averageRating;
   final int totalReviews;
@@ -17,6 +19,8 @@ class AppModel {
     required this.name,
     required this.description,
     required this.iconUrl,
+    required this.packageName,
+    required this.versionCode,
     this.version,
     this.size,
     this.developer,
@@ -41,6 +45,8 @@ class AppModel {
           : null,
       totalReviews: json['total_reviews'] ?? 0,
       downloadCount: json['download_count'] ?? 0,
+      packageName: json['package_name'],
+      versionCode: json['version_code'],
     );
   }
 }

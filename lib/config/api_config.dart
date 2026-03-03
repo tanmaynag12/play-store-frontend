@@ -10,11 +10,9 @@ class ApiConfig {
     if (Platform.isAndroid) {
       const emulatorHost = "10.0.2.2";
 
-      const realDeviceHost = "192.168.1.14";
 
-      const bool useRealDevice = true;
 
-      final host = useRealDevice ? realDeviceHost : emulatorHost;
+      final host = emulatorHost;
       return "http://$host:3000";
     }
 
