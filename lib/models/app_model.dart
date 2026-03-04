@@ -9,7 +9,7 @@ class AppModel {
   final String? ratedFor;
   final String packageName;
   final int versionCode;
-
+  final String? createdAt;
   final double? averageRating;
   final int totalReviews;
   final int downloadCount;
@@ -25,6 +25,7 @@ class AppModel {
     this.size,
     this.developer,
     this.ratedFor,
+    this.createdAt,
     this.averageRating,
     this.totalReviews = 0,
     this.downloadCount = 0,
@@ -46,6 +47,7 @@ class AppModel {
       totalReviews: json['total_reviews'] ?? 0,
       downloadCount: json['download_count'] ?? 0,
       packageName: json['package_name'],
+      createdAt: json['created_at'],
       versionCode: json['version_code'],
     );
   }

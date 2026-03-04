@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import '../models/app_model.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:convert';
 
 class AdminUploadScreen extends StatefulWidget {
   final AppModel? app;
@@ -59,7 +60,6 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
     super.dispose();
   }
 
-  // ✅ NEW: Pick Icon only
   Future<void> pickIcon() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
@@ -73,7 +73,6 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
     }
   }
 
-  // ✅ NEW: Pick Screenshots only
   Future<void> pickScreenshots() async {
     final result = await FilePicker.platform.pickFiles(
       allowMultiple: true,
@@ -182,8 +181,9 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
         );
       }
     }
-
     final response = await request.send();
+    final responseBody = await response.stream.bytesToString();
+
     setState(() => uploading = false);
 
     if (!mounted) return;
@@ -199,11 +199,15 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
       );
       Navigator.pop(context, true);
     } else {
+      String message = "Operation failed";
+
+      try {
+        final data = json.decode(responseBody);
+        message = data["error"] ?? message;
+      } catch (_) {}
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Operation failed: ${response.statusCode}"),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
       );
     }
   }

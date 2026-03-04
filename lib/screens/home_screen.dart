@@ -10,6 +10,7 @@ import 'admin_upload_screen.dart';
 import 'login_screen.dart';
 import 'package:play_store_app/config/api_config.dart';
 import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -34,6 +35,29 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _debounce?.cancel();
     super.dispose();
+  }
+
+  Future<bool> isNewApp(int appId) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final seenApps = prefs.getStringList("seen_apps_v1") ?? [];
+
+    if (seenApps.contains(appId.toString())) {
+      return false;
+    }
+
+    return true;
+  }
+
+  Future<void> markAppSeen(int appId) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final seenApps = prefs.getStringList("seen_apps_v1") ?? [];
+
+    if (!seenApps.contains(appId.toString())) {
+      seenApps.add(appId.toString());
+      await prefs.setStringList("seen_apps_v1", seenApps);
+    }
   }
 
   Future<void> fetchApps({String? query}) async {
@@ -182,7 +206,14 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1300),
-          child: isDesktop
+          child: apps.isEmpty
+              ? const Center(
+                  child: Text(
+                    "No apps found",
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
+                )
+              : isDesktop
               ? GridView.builder(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 40,
@@ -223,6 +254,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: InkWell(
                             borderRadius: BorderRadius.circular(22),
                             onTap: () async {
+                              await markAppSeen(app.id);
+
                               final deleted = await Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -259,19 +292,60 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 16),
-                                  Text(
-                                    app.name,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 16,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+
+                                  FutureBuilder<bool>(
+                                    future: isNewApp(app.id),
+                                    builder: (context, snapshot) {
+                                      final isNew = snapshot.data ?? false;
+
+                                      return Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Flexible(
+                                            child: Text(
+                                              app.name,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 16,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          if (isNew)
+                                            Container(
+                                              margin: const EdgeInsets.only(
+                                                left: 6,
+                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 6,
+                                                    vertical: 2,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.green,
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                              ),
+                                              child: const Text(
+                                                "NEW",
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      );
+                                    },
                                   ),
                                   const SizedBox(height: 6),
+
                                   if (app.averageRating != null)
                                     Text(
-                                      "⭐ ${app.averageRating!.toStringAsFixed(1)}  (${app.totalReviews})",
+                                      "⭐ ${app.averageRating!.toStringAsFixed(1)} (${app.totalReviews})",
                                       style: const TextStyle(
                                         fontSize: 13,
                                         color: Colors.grey,
@@ -285,6 +359,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                         color: Colors.grey,
                                       ),
                                     ),
+
+                                  const SizedBox(height: 4),
+
+                                  Text(
+                                    "${app.downloadCount} download${app.downloadCount == 1 ? '' : 's'}",
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+
                                   const SizedBox(height: 12),
                                   Expanded(
                                     child: Text(
@@ -340,6 +425,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           onTap: () async {
+                            await markAppSeen(app.id);
+
                             final deleted = await Navigator.push(
                               context,
                               MaterialPageRoute(

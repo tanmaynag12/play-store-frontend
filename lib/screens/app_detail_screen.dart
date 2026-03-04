@@ -31,6 +31,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
   List<String> screenshots = [];
   bool loadingScreenshots = true;
 
+  Map<int, int> ratingDistribution = {};
   List<RatingModel> ratings = [];
   bool loadingRatings = true;
 
@@ -128,6 +129,13 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
 
         setState(() {
           currentApp = AppModel.fromJson(data);
+          ratingDistribution.clear();
+
+          if (data["rating_distribution"] != null) {
+            for (final item in data["rating_distribution"]) {
+              ratingDistribution[item["rating"]] = item["count"];
+            }
+          }
           screenshots = (data["screenshots"] as List)
               .map((e) => "${ApiConfig.baseUrl}$e")
               .toList();
@@ -205,6 +213,35 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
       if (!mounted) return;
       setState(() => loadingRatings = false);
     }
+  }
+
+  Widget _buildRatingDistribution() {
+    final total = currentApp.totalReviews == 0 ? 1 : currentApp.totalReviews;
+
+    return Column(
+      children: List.generate(5, (i) {
+        final star = 5 - i;
+        final count = ratingDistribution[star] ?? 0;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(
+            children: [
+              SizedBox(width: 30, child: Text("$star★")),
+              Expanded(
+                child: LinearProgressIndicator(
+                  value: count / total,
+                  backgroundColor: Colors.grey[300],
+                  color: Colors.green,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text("$count"),
+            ],
+          ),
+        );
+      }),
+    );
   }
 
   Widget _buildStarPicker() {
@@ -401,9 +438,12 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                           style: TextStyle(color: Colors.red),
                         ),
                       ),
-                    const SizedBox(height: 48),
                     const Divider(thickness: 1),
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 24),
+
+                    _buildRatingDistribution(),
+
+                    const SizedBox(height: 24),
 
                     const Text(
                       "All Reviews",
@@ -548,6 +588,9 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                   const SizedBox(height: 12),
                   Text("Version: ${currentApp.version ?? 'N/A'}"),
                   Text("Size: ${currentApp.size ?? 'N/A'}"),
+                  Text(
+                    "Last updated: ${currentApp.createdAt != null ? currentApp.createdAt!.split('T').first : 'Unknown'}",
+                  ),
                   const SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: () async {
