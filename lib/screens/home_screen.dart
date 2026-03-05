@@ -11,6 +11,8 @@ import 'login_screen.dart';
 import 'package:play_store_app/config/api_config.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
+import 'my_apps_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -47,6 +49,17 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return true;
+  }
+
+  Future<void> pickProfileImage() async {
+    final picker = ImagePicker();
+
+    final image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image != null) {
+      final auth = context.read<AuthProvider>();
+      await auth.updateProfileImage(image);
+    }
   }
 
   Future<void> markAppSeen(int appId) async {
@@ -161,13 +174,40 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           actions: [
             auth.isLoggedIn
-                ? PopupMenuButton(
-                    icon: const Icon(Icons.account_circle, color: Colors.black),
-                    itemBuilder: (_) => [
+                ? PopupMenuButton<String>(
+                    onSelected: (value) async {
+                      if (value == "upload") {
+                        await pickProfileImage();
+                      } else if (value == "my_apps") {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const MyAppsScreen(),
+                          ),
+                        );
+                      } else if (value == "logout") {
+                        auth.logout();
+                      }
+                    },
+                    icon: CircleAvatar(
+                      radius: 16,
+                      backgroundColor: Colors.grey.shade200,
+                      backgroundImage: auth.user?.profileImage != null
+                          ? NetworkImage(
+                              "${ApiConfig.baseUrl}${auth.user!.profileImage}",
+                            )
+                          : null,
+                      child: auth.user?.profileImage == null
+                          ? Text(auth.user!.name[0].toUpperCase())
+                          : null,
+                    ),
+                    itemBuilder: (context) => [
                       PopupMenuItem(
-                        child: const Text('Logout'),
-                        onTap: () => auth.logout(),
+                        value: "upload",
+                        child: Text("Change Profile Image"),
                       ),
+                      PopupMenuItem(value: "my_apps", child: Text("My Apps")),
+                      PopupMenuItem(value: "logout", child: Text("Logout")),
                     ],
                   )
                 : TextButton(

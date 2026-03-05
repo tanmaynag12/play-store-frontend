@@ -12,7 +12,6 @@ import 'admin_upload_screen.dart';
 import 'package:play_store_app/config/api_config.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import '../services/native_uninstall_service.dart';
 
 class AppDetailScreen extends StatefulWidget {
   final AppModel app;
@@ -37,7 +36,6 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
 
   RatingModel? userRating;
 
-  bool installed = false;
   bool wishlisted = false;
   bool bookmarked = false;
   bool isDownloading = false;
@@ -52,7 +50,6 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
     currentApp = widget.app;
     fetchAppDetails();
     fetchRatings();
-    _checkInstalled();
   }
 
   @override
@@ -141,8 +138,6 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
               .toList();
           loadingScreenshots = false;
         });
-
-        await _checkInstalled();
       } else {
         if (!mounted) return;
         setState(() => loadingScreenshots = false);
@@ -329,20 +324,6 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
     }
   }
 
-  Future<void> _checkInstalled() async {
-    if (kIsWeb) return;
-
-    final result = await NativeUninstallService.isAppInstalled(
-      currentApp.packageName,
-    );
-
-    if (!mounted) return;
-
-    setState(() {
-      installed = result;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -398,6 +379,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                   children: [
                     _leftPanel(),
                     const SizedBox(height: 40),
+
                     const Text(
                       "Rate this app",
                       style: TextStyle(
@@ -405,8 +387,11 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+
                     const SizedBox(height: 12),
+
                     _buildStarPicker(),
+
                     TextField(
                       controller: reviewController,
                       maxLines: 3,
@@ -415,7 +400,9 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                         border: OutlineInputBorder(),
                       ),
                     ),
+
                     const SizedBox(height: 12),
+
                     ElevatedButton(
                       onPressed: submittingRating ? null : submitRating,
                       child: submittingRating
@@ -430,6 +417,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                                   : "Submit Review",
                             ),
                     ),
+
                     if (userRating != null)
                       TextButton(
                         onPressed: deleteRating,
@@ -438,7 +426,9 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                           style: TextStyle(color: Colors.red),
                         ),
                       ),
+
                     const Divider(thickness: 1),
+
                     const SizedBox(height: 24),
 
                     _buildRatingDistribution(),
@@ -452,6 +442,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+
                     const SizedBox(height: 16),
 
                     if (loadingRatings)
@@ -592,38 +583,25 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                     "Last updated: ${currentApp.createdAt != null ? currentApp.createdAt!.split('T').first : 'Unknown'}",
                   ),
                   const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () async {
-                      if (installed) {
-                        if (kIsWeb) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                "Uninstall only works in Android app.",
-                              ),
-                            ),
-                          );
-                          return;
-                        }
 
-                        await NativeUninstallService.uninstallApp(
-                          currentApp.packageName,
-                        );
-                      } else {
+                  SizedBox(
+                    width: 200,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () async {
                         await installApp();
-                      }
-
-                      await Future.delayed(const Duration(seconds: 1));
-                      _checkInstalled();
-                    },
-                    child: Text(installed ? "Uninstall" : "Install"),
+                      },
+                      child: const Text("Install"),
+                    ),
                   ),
                 ],
               ),
             ),
           ],
         ),
+
         const SizedBox(height: 28),
+
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
@@ -650,6 +628,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 24),
+
         if (loadingScreenshots)
           const CircularProgressIndicator()
         else if (screenshots.isNotEmpty)
@@ -661,22 +640,29 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
               itemBuilder: (context, index) {
                 return Padding(
                   padding: const EdgeInsets.only(right: 20),
-                  child: Image.network(
-                    screenshots[index],
-                    width: 160,
-                    height: 280,
-                    fit: BoxFit.cover,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.network(
+                      screenshots[index],
+                      width: 160,
+                      height: 280,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 );
               },
             ),
           ),
+
         const SizedBox(height: 48),
+
         const Text(
           "About this app",
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
+
         const SizedBox(height: 16),
+
         Text(currentApp.description),
       ],
     );

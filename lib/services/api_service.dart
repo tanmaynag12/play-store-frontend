@@ -21,6 +21,19 @@ class ApiService {
     return headers;
   }
 
+  static Future<List<dynamic>> fetchMyApps(String token) async {
+    final res = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/api/apps/my-apps'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body);
+    } else {
+      throw Exception("Failed to load my apps");
+    }
+  }
+
   static Future<List<dynamic>> fetchApps({String? search}) async {
     String url = '${ApiConfig.baseUrl}/api/apps';
 

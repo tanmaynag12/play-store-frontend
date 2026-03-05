@@ -3,6 +3,9 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
 import '../models/user_model.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:typed_data';
+import 'package:image_picker/image_picker.dart';
 
 class AuthService {
   static const _tokenKey = 'jwt_token';
@@ -65,6 +68,54 @@ class AuthService {
         'error': data['error'] ?? 'Registration failed.',
       };
     }
+  }
+
+  Future<String?> uploadProfileImage(XFile image) async {
+    final token = await getToken();
+
+    var request = http.MultipartRequest(
+      "PUT",
+      Uri.parse("${ApiConfig.baseUrl}/api/auth/profile-image"),
+    );
+
+    request.headers["Authorization"] = "Bearer $token";
+
+    if (kIsWeb) {
+      Uint8List bytes = await image.readAsBytes();
+
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          "profile_image",
+          bytes,
+          filename: image.name,
+        ),
+      );
+    } else {
+      request.files.add(
+        await http.MultipartFile.fromPath("profile_image", image.path),
+      );
+    }
+
+    final response = await request.send();
+
+    if (response.statusCode == 200) {
+      final res = await http.Response.fromStream(response);
+      final data = jsonDecode(res.body);
+
+      final prefs = await SharedPreferences.getInstance();
+      final userStr = prefs.getString(_userKey);
+
+      if (userStr != null) {
+        final userMap = jsonDecode(userStr);
+        userMap["profile_image"] = data["profile_image"];
+
+        await prefs.setString(_userKey, jsonEncode(userMap));
+      }
+
+      return data["profile_image"];
+    }
+
+    return null;
   }
 
   Future<String?> getToken() async {

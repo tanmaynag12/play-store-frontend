@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -41,6 +42,22 @@ class AuthProvider extends ChangeNotifier {
     } else {
       notifyListeners();
       return result['error'];
+    }
+  }
+
+  Future<void> updateProfileImage(XFile image) async {
+    final newPath = await _authService.uploadProfileImage(image);
+
+    if (newPath != null && _user != null) {
+      _user = UserModel(
+        id: _user!.id,
+        name: _user!.name,
+        email: _user!.email,
+        role: _user!.role,
+        profileImage: newPath,
+      );
+
+      notifyListeners();
     }
   }
 
