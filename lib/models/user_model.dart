@@ -14,11 +14,14 @@ class UserModel {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    final firstName = json['first_name'] ?? '';
+    final lastName = json['last_name'] ?? '';
+
     return UserModel(
       id: json['id'],
-      name: json['name'],
-      email: json['email'],
-      role: json['role'],
+      name: "$firstName $lastName",
+      email: json['email'] ?? '',
+      role: json['role'] ?? 'user',
       profileImage: json['profile_image'],
     );
   }

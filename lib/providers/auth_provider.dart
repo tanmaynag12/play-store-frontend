@@ -26,6 +26,16 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> deleteAccount() async {
+    final success = await _authService.deleteAccount();
+
+    if (success) {
+      await logout();
+    }
+
+    return success;
+  }
+
   Future<String?> login(String email, String password) async {
     _loading = true;
     notifyListeners();
@@ -61,11 +71,25 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<String?> register(String name, String email, String password) async {
+  Future<String?> register(
+    String firstName,
+    String lastName,
+    String email,
+    String password,
+    String dob,
+    String gender,
+  ) async {
     _loading = true;
     notifyListeners();
 
-    final result = await _authService.register(name, email, password);
+    final result = await _authService.register(
+      firstName,
+      lastName,
+      email,
+      password,
+      dob,
+      gender,
+    );
 
     _loading = false;
 

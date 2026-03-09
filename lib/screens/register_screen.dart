@@ -11,15 +11,20 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
+  final _firstNameCtrl = TextEditingController();
+  final _lastNameCtrl = TextEditingController();
+  final _dobCtrl = TextEditingController();
+  String _gender = "Male";
   bool _obscure = true;
 
   @override
   void dispose() {
-    _nameCtrl.dispose();
+    _firstNameCtrl.dispose();
+    _lastNameCtrl.dispose();
+    _dobCtrl.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     _confirmCtrl.dispose();
@@ -30,10 +35,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final auth = context.read<AuthProvider>();
+
     final error = await auth.register(
-      _nameCtrl.text.trim(),
+      _firstNameCtrl.text.trim(),
+      _lastNameCtrl.text.trim(),
       _emailCtrl.text.trim(),
       _passwordCtrl.text,
+      _dobCtrl.text.trim(),
+      _gender,
     );
 
     if (!mounted) return;
@@ -83,20 +92,112 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 32),
 
-                  // Name
+                  // First Name
                   TextFormField(
-                    controller: _nameCtrl,
+                    controller: _firstNameCtrl,
                     textCapitalization: TextCapitalization.words,
                     decoration: InputDecoration(
-                      labelText: 'Full Name',
+                      labelText: 'First Name',
                       prefixIcon: const Icon(Icons.person_outline),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     validator: (v) => (v == null || v.trim().isEmpty)
-                        ? 'Enter your name'
+                        ? 'Enter first name'
                         : null,
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Last Name
+                  TextFormField(
+                    controller: _lastNameCtrl,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: InputDecoration(
+                      labelText: 'Last Name',
+                      prefixIcon: const Icon(Icons.person_outline),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Enter last name'
+                        : null,
+                  ),
+                  const SizedBox(height: 18),
+
+                  // DOB
+                  TextFormField(
+                    controller: _dobCtrl,
+                    keyboardType: TextInputType.datetime,
+                    decoration: InputDecoration(
+                      labelText: 'Date of Birth',
+                      hintText: "YYYY-MM-DD",
+                      prefixIcon: const Icon(Icons.calendar_today),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.date_range),
+                        onPressed: () async {
+                          DateTime? picked = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime(2000),
+                            firstDate: DateTime(1900),
+                            lastDate: DateTime.now(),
+                          );
+
+                          if (picked != null) {
+                            setState(() {
+                              _dobCtrl.text =
+                                  "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return "Enter or select DOB";
+                      }
+
+                      final regex = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+
+                      if (!regex.hasMatch(value)) {
+                        return "Use format YYYY-MM-DD";
+                      }
+
+                      try {
+                        DateTime.parse(value);
+                      } catch (_) {
+                        return "Invalid date";
+                      }
+
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Gender
+                  DropdownButtonFormField<String>(
+                    initialValue: _gender,
+                    decoration: InputDecoration(
+                      labelText: 'Gender',
+                      prefixIcon: const Icon(Icons.wc),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: "Male", child: Text("Male")),
+                      DropdownMenuItem(value: "Female", child: Text("Female")),
+                      DropdownMenuItem(value: "Other", child: Text("Other")),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _gender = value!;
+                      });
+                    },
                   ),
                   const SizedBox(height: 18),
 

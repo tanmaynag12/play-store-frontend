@@ -6,6 +6,7 @@ import '../models/user_model.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
+import '../utils/hex_id.dart';
 
 class AuthService {
   static const _tokenKey = 'jwt_token';
@@ -46,14 +47,33 @@ class AuthService {
   }
 
   Future<Map<String, dynamic>> register(
-    String name,
+    String firstName,
+    String lastName,
     String email,
     String password,
+    String dob,
+    String gender,
   ) async {
+    final hexId = generateHexId(
+      email,
+      password,
+      firstName,
+      lastName,
+      dob,
+      gender,
+    );
     final res = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/api/auth/register'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': name, 'email': email, 'password': password}),
+      body: jsonEncode({
+        'first_name': firstName,
+        'last_name': lastName,
+        'email': email,
+        'password': password,
+        'dob': dob,
+        'gender': gender,
+        'hex_id': hexId,
+      }),
     );
 
     final data = jsonDecode(res.body);
@@ -116,6 +136,20 @@ class AuthService {
     }
 
     return null;
+  }
+
+  Future<bool> deleteAccount() async {
+    final token = await getToken();
+
+    final res = await http.delete(
+      Uri.parse('${ApiConfig.baseUrl}/api/auth/delete-account'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    return res.statusCode == 200;
   }
 
   Future<String?> getToken() async {

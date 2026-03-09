@@ -41,7 +41,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<bool> isNewApp(int appId) async {
     final prefs = await SharedPreferences.getInstance();
-
     final seenApps = prefs.getStringList("seen_apps_v1") ?? [];
 
     if (seenApps.contains(appId.toString())) {
@@ -53,7 +52,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> pickProfileImage() async {
     final picker = ImagePicker();
-
     final image = await picker.pickImage(source: ImageSource.gallery);
 
     if (image != null) {
@@ -64,7 +62,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> markAppSeen(int appId) async {
     final prefs = await SharedPreferences.getInstance();
-
     final seenApps = prefs.getStringList("seen_apps_v1") ?? [];
 
     if (!seenApps.contains(appId.toString())) {
@@ -185,6 +182,44 @@ class _HomeScreenState extends State<HomeScreen> {
                             builder: (_) => const MyAppsScreen(),
                           ),
                         );
+                      } else if (value == "delete_account") {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text("Delete Account"),
+                            content: const Text(
+                              "Are you sure you want to delete your account?\n\nThis action cannot be undone.",
+                            ),
+                            actions: [
+                              TextButton(
+                                child: const Text("Cancel"),
+                                onPressed: () => Navigator.pop(context, false),
+                              ),
+                              TextButton(
+                                child: const Text(
+                                  "Delete",
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                                onPressed: () => Navigator.pop(context, true),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (confirm == true) {
+                          final success = await context
+                              .read<AuthProvider>()
+                              .deleteAccount();
+
+                          if (!mounted) return;
+
+                          if (success) {
+                            Navigator.popUntil(
+                              context,
+                              (route) => route.isFirst,
+                            );
+                          }
+                        }
                       } else if (value == "logout") {
                         auth.logout();
                       }
@@ -202,12 +237,25 @@ class _HomeScreenState extends State<HomeScreen> {
                           : null,
                     ),
                     itemBuilder: (context) => [
-                      PopupMenuItem(
+                      const PopupMenuItem(
                         value: "upload",
                         child: Text("Change Profile Image"),
                       ),
-                      PopupMenuItem(value: "my_apps", child: Text("My Apps")),
-                      PopupMenuItem(value: "logout", child: Text("Logout")),
+                      const PopupMenuItem(
+                        value: "my_apps",
+                        child: Text("My Apps"),
+                      ),
+                      const PopupMenuItem(
+                        value: "delete_account",
+                        child: Text(
+                          "Delete Account",
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: "logout",
+                        child: Text("Logout"),
+                      ),
                     ],
                   )
                 : TextButton(
