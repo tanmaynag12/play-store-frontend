@@ -12,11 +12,11 @@ class AuthService {
   static const _tokenKey = 'jwt_token';
   static const _userKey = 'user_data';
 
-  Future<Map<String, dynamic>> login(String email, String password) async {
+  Future<Map<String, dynamic>> login(String hexId, String password) async {
     final res = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/api/auth/login'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'password': password}),
+      body: jsonEncode({'hex_id': hexId, 'password': password}),
     );
 
     final data = jsonDecode(res.body);
@@ -81,7 +81,11 @@ class AuthService {
     if (res.statusCode == 201 || res.statusCode == 200) {
       await _saveToken(data['token']);
       await _saveUser(data['user']);
-      return {'success': true, 'user': UserModel.fromJson(data['user'])};
+      return {
+        'success': true,
+        'user': UserModel.fromJson(data['user']),
+        'hex_id': data['hex_id'],
+      };
     } else {
       return {
         'success': false,
@@ -150,6 +154,22 @@ class AuthService {
     );
 
     return res.statusCode == 200;
+  }
+
+  Future<Map<String, dynamic>> getHexId(String email) async {
+    final res = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/api/auth/forgot-hexid'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
+    );
+
+    final data = jsonDecode(res.body);
+
+    if (res.statusCode == 200) {
+      return {'success': true, 'hex_id': data['hex_id']};
+    } else {
+      return {'success': false, 'error': data['error']};
+    }
   }
 
   Future<String?> getToken() async {

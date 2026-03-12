@@ -1,6 +1,6 @@
 {
-    "name": "play_store_app",
-    "short_name": "play_store_app",
+    "name": "BOCK STORE",
+    "short_name": "BOCK STORE",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

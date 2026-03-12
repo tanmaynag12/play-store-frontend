@@ -9,6 +9,8 @@ class AuthProvider extends ChangeNotifier {
   UserModel? _user;
   String? _token;
   bool _loading = false;
+  String? _lastHexId;
+  String? get lastHexId => _lastHexId;
 
   UserModel? get user => _user;
   String? get token => _token;
@@ -96,10 +98,21 @@ class AuthProvider extends ChangeNotifier {
     if (result['success']) {
       _user = result['user'];
       _token = await _authService.getToken();
+      _lastHexId = result['hex_id'];
       notifyListeners();
       return null;
     } else {
       notifyListeners();
+      return result['error'];
+    }
+  }
+
+  Future<String?> fetchHexId(String email) async {
+    final result = await _authService.getHexId(email);
+
+    if (result['success']) {
+      return result['hex_id'];
+    } else {
       return result['error'];
     }
   }

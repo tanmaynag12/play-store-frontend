@@ -17,7 +17,8 @@ class AdminUploadScreen extends StatefulWidget {
   State<AdminUploadScreen> createState() => _AdminUploadScreenState();
 }
 
-class _AdminUploadScreenState extends State<AdminUploadScreen> {
+class _AdminUploadScreenState extends State<AdminUploadScreen>
+    with SingleTickerProviderStateMixin {
   final nameController = TextEditingController();
   final descController = TextEditingController();
   final versionController = TextEditingController();
@@ -33,9 +34,25 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
   bool uploading = false;
   bool get isEdit => widget.app != null;
 
+  static const _green = Color(0xFF1DB954);
+
+  late AnimationController _animCtrl;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
+
   @override
   void initState() {
     super.initState();
+    _animCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0, 0.05),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut));
+    _animCtrl.forward();
 
     if (isEdit) {
       nameController.text = widget.app!.name;
@@ -57,6 +74,7 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
     developerController.dispose();
     ratedForController.dispose();
     packageController.dispose();
+    _animCtrl.dispose();
     super.dispose();
   }
 
@@ -65,12 +83,7 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
       type: FileType.image,
       withData: true,
     );
-
-    if (result != null) {
-      setState(() {
-        iconFile = result.files.first;
-      });
-    }
+    if (result != null) setState(() => iconFile = result.files.first);
   }
 
   Future<void> pickScreenshots() async {
@@ -79,11 +92,8 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
       type: FileType.image,
       withData: true,
     );
-
     if (result != null && result.files.isNotEmpty) {
-      setState(() {
-        screenshotFiles = result.files;
-      });
+      setState(() => screenshotFiles = result.files);
     }
   }
 
@@ -93,12 +103,7 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
       allowedExtensions: ['apk'],
       withData: true,
     );
-
-    if (result != null) {
-      setState(() {
-        apkFile = result.files.first;
-      });
-    }
+    if (result != null) setState(() => apkFile = result.files.first);
   }
 
   Future<void> submit() async {
@@ -110,7 +115,7 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Package name is required"),
-          backgroundColor: Colors.red,
+          backgroundColor: Color(0xFFE53935),
         ),
       );
       return;
@@ -181,9 +186,9 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
         );
       }
     }
+
     final response = await request.send();
     final responseBody = await response.stream.bytesToString();
-
     setState(() => uploading = false);
 
     if (!mounted) return;
@@ -194,36 +199,23 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
           content: Text(
             isEdit ? "App updated successfully" : "App uploaded successfully",
           ),
-          backgroundColor: Colors.green,
+          backgroundColor: _green,
         ),
       );
       Navigator.pop(context, true);
     } else {
       String message = "Operation failed";
-
       try {
         final data = json.decode(responseBody);
         message = data["error"] ?? message;
       } catch (_) {}
-
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(message),
+          backgroundColor: const Color(0xFFE53935),
+        ),
       );
     }
-  }
-
-  InputDecoration _inputDecoration(String label) {
-    return InputDecoration(
-      labelText: label,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-    );
-  }
-
-  ButtonStyle _buttonStyle() {
-    return ElevatedButton.styleFrom(
-      backgroundColor: Colors.green,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    );
   }
 
   @override
@@ -231,180 +223,444 @@ class _AdminUploadScreenState extends State<AdminUploadScreen> {
     final width = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: const Color(0xFFF0F4F0),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF1A1A1A)),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: _green..withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Icon(
+                isEdit ? Icons.edit_rounded : Icons.cloud_upload_rounded,
+                color: _green,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              isEdit ? "Edit App" : "Upload App",
+              style: const TextStyle(
+                color: Color(0xFF1A1A1A),
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Text(
+                "ADMIN",
+                style: TextStyle(
+                  color: _green,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(height: 1, color: Colors.grey.shade100),
+        ),
+      ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Container(
-            width: width > 900 ? 800 : double.infinity,
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  blurRadius: 25,
-                  color: Colors.black.withOpacity(0.05),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.cloud_upload,
-                      color: Colors.green,
-                      size: 30,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          child: FadeTransition(
+            opacity: _fadeAnim,
+            child: SlideTransition(
+              position: _slideAnim,
+              child: Container(
+                width: width > 900 ? 780 : double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      blurRadius: 30,
+                      offset: const Offset(0, 10),
+                      color: _green..withValues(alpha: 0.07),
                     ),
-                    const SizedBox(width: 12),
-                    Text(
-                      isEdit ? "Edit App (Admin)" : "Upload App (Admin)",
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    BoxShadow(
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                      color: Colors.black..withValues(alpha: 0.05),
                     ),
                   ],
                 ),
-                const SizedBox(height: 30),
-
-                TextField(
-                  controller: nameController,
-                  decoration: _inputDecoration("App Name"),
-                ),
-                const SizedBox(height: 18),
-
-                TextField(
-                  controller: descController,
-                  decoration: _inputDecoration("Description"),
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 18),
-
-                Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: versionController,
-                        decoration: _inputDecoration("Version"),
+                    // Header stripe
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 28,
+                        vertical: 22,
+                      ),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF1DB954), Color(0xFF17a349)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(24),
+                          topRight: Radius.circular(24),
+                        ),
+                      ),
+                      child: Text(
+                        isEdit
+                            ? "Update the app details below"
+                            : "Fill in the app details to publish",
+                        style: TextStyle(
+                          color: Colors.white..withValues(alpha: 0.92),
+                          fontSize: 13,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextField(
-                        controller: sizeController,
-                        decoration: _inputDecoration("Size"),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
 
-                TextField(
-                  controller: developerController,
-                  decoration: _inputDecoration("Developer"),
-                ),
-                const SizedBox(height: 18),
-
-                TextField(
-                  controller: ratedForController,
-                  decoration: _inputDecoration("Rated For (e.g. 3+, 12+)"),
-                ),
-                const SizedBox(height: 18),
-
-                TextField(
-                  controller: packageController,
-                  decoration: _inputDecoration(
-                    "Package Name (e.g. org.fdroid.fdroid)",
-                  ),
-                ),
-
-                const SizedBox(height: 30),
-                const Divider(),
-                const SizedBox(height: 20),
-
-                const Text(
-                  "Assets",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 16),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        style: _buttonStyle(),
-                        onPressed: uploading ? null : pickIcon,
-                        child: const Text("Pick Icon"),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: _buttonStyle(),
-                        onPressed: uploading ? null : pickScreenshots,
-                        child: const Text("Pick Screenshots"),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                ElevatedButton(
-                  style: _buttonStyle(),
-                  onPressed: uploading ? null : pickApk,
-                  child: const Text("Pick APK"),
-                ),
-
-                const SizedBox(height: 12),
-
-                if (iconFile != null)
-                  const Text(
-                    "✔ New icon selected",
-                    style: TextStyle(color: Colors.green),
-                  ),
-
-                if (screenshotFiles.isNotEmpty)
-                  Text(
-                    "✔ ${screenshotFiles.length} screenshots selected",
-                    style: const TextStyle(color: Colors.green),
-                  ),
-
-                if (apkFile != null)
-                  const Text(
-                    "✔ APK selected",
-                    style: TextStyle(color: Colors.green),
-                  ),
-
-                const SizedBox(height: 30),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    style: _buttonStyle(),
-                    onPressed: uploading ? null : submit,
-                    child: uploading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(
-                            isEdit ? "Update App" : "Upload App",
-                            style: const TextStyle(fontSize: 16),
+                    Padding(
+                      padding: const EdgeInsets.all(28),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // ── App Info section ────────────────────────
+                          _sectionHeader(
+                            Icons.info_outline_rounded,
+                            "App Info",
                           ),
-                  ),
+                          const SizedBox(height: 16),
+
+                          _buildLabel("App Name"),
+                          const SizedBox(height: 8),
+                          _buildField(nameController, "e.g. My Awesome App"),
+                          const SizedBox(height: 18),
+
+                          _buildLabel("Description"),
+                          const SizedBox(height: 8),
+                          _buildField(
+                            descController,
+                            "Describe what the app does...",
+                            maxLines: 3,
+                          ),
+                          const SizedBox(height: 18),
+
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildLabel("Version"),
+                                    const SizedBox(height: 8),
+                                    _buildField(
+                                      versionController,
+                                      "e.g. 1.0.0",
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildLabel("Size"),
+                                    const SizedBox(height: 8),
+                                    _buildField(sizeController, "e.g. 25 MB"),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+
+                          _buildLabel("Developer"),
+                          const SizedBox(height: 8),
+                          _buildField(developerController, "e.g. Acme Corp"),
+                          const SizedBox(height: 18),
+
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildLabel("Rated For"),
+                                    const SizedBox(height: 8),
+                                    _buildField(
+                                      ratedForController,
+                                      "e.g. 3+, 12+",
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildLabel("Package Name *"),
+                                    const SizedBox(height: 8),
+                                    _buildField(
+                                      packageController,
+                                      "e.g. org.fdroid.fdroid",
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 32),
+                          Divider(color: Colors.grey.shade100),
+                          const SizedBox(height: 24),
+
+                          // ── Assets section ───────────────────────────
+                          _sectionHeader(Icons.perm_media_rounded, "Assets"),
+                          const SizedBox(height: 16),
+
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _assetButton(
+                                  icon: Icons.image_rounded,
+                                  label: "Pick Icon",
+                                  onPressed: uploading ? null : pickIcon,
+                                  selected: iconFile != null,
+                                  selectedLabel: "Icon selected",
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: _assetButton(
+                                  icon: Icons.photo_library_rounded,
+                                  label: "Pick Screenshots",
+                                  onPressed: uploading ? null : pickScreenshots,
+                                  selected: screenshotFiles.isNotEmpty,
+                                  selectedLabel:
+                                      "${screenshotFiles.length} selected",
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          _assetButton(
+                            icon: Icons.android_rounded,
+                            label: "Pick APK File",
+                            onPressed: uploading ? null : pickApk,
+                            selected: apkFile != null,
+                            selectedLabel: apkFile?.name ?? "APK selected",
+                            fullWidth: true,
+                          ),
+
+                          const SizedBox(height: 32),
+
+                          // ── Submit ───────────────────────────────────
+                          SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: ElevatedButton(
+                              onPressed: uploading ? null : submit,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _green,
+                                foregroundColor: Colors.white,
+                                disabledBackgroundColor: _green.withValues(
+                                  alpha: 0.5,
+                                ),
+                                elevation: 0,
+                                shadowColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: uploading
+                                  ? const SizedBox(
+                                      height: 22,
+                                      width: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          isEdit
+                                              ? Icons.save_rounded
+                                              : Icons.cloud_upload_rounded,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          isEdit
+                                              ? "Save Changes"
+                                              : "Publish App",
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 0.3,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionHeader(IconData icon, String label) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(7),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1DB954).withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: const Color(0xFF1DB954), size: 16),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF1A1A1A),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLabel(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: Color(0xFF424242),
+        letterSpacing: 0.2,
+      ),
+    );
+  }
+
+  Widget _buildField(
+    TextEditingController ctrl,
+    String hint, {
+    int maxLines = 1,
+  }) {
+    return TextField(
+      controller: ctrl,
+      maxLines: maxLines,
+      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+        filled: true,
+        fillColor: const Color(0xFFF5FAF6),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 13,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF1DB954), width: 1.8),
+        ),
+      ),
+    );
+  }
+
+  Widget _assetButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback? onPressed,
+    required bool selected,
+    required String selectedLabel,
+    bool fullWidth = false,
+  }) {
+    return SizedBox(
+      width: fullWidth ? double.infinity : null,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: selected
+              ? const Color(0xFF1DB954)
+              : const Color(0xFF424242),
+          backgroundColor: selected
+              ? const Color(0xFF1DB954).withValues(alpha: 0.05)
+              : const Color(0xFFF5FAF6),
+          side: BorderSide(
+            color: selected
+                ? const Color(0xFF1DB954).withValues(alpha: 0.5)
+                : Colors.grey.shade200,
+            width: selected ? 1.5 : 1,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              selected ? Icons.check_circle_rounded : icon,
+              size: 18,
+              color: selected ? const Color(0xFF1DB954) : Colors.grey.shade500,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                selected ? selectedLabel : label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: selected
+                      ? const Color(0xFF1DB954)
+                      : Colors.grey.shade600,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
       ),
     );

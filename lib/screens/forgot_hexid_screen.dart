@@ -1,23 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import 'register_screen.dart';
-import 'forgot_hexid_screen.dart';
-import 'home_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class ForgotHexIdScreen extends StatefulWidget {
+  const ForgotHexIdScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<ForgotHexIdScreen> createState() => _ForgotHexIdScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
+class _ForgotHexIdScreenState extends State<ForgotHexIdScreen>
     with SingleTickerProviderStateMixin {
+  final _emailCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  final _hexIdCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
-  bool _obscure = true;
 
   late AnimationController _animCtrl;
   late Animation<double> _fadeAnim;
@@ -38,46 +33,96 @@ class _LoginScreenState extends State<LoginScreen>
     _animCtrl.forward();
   }
 
-  @override
-  void dispose() {
-    _hexIdCtrl.dispose();
-    _passwordCtrl.dispose();
-    _animCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
+  Future<void> _getHexId() async {
     if (!_formKey.currentState!.validate()) return;
 
     final auth = context.read<AuthProvider>();
-    final error = await auth.login(_hexIdCtrl.text.trim(), _passwordCtrl.text);
+    final result = await auth.fetchHexId(_emailCtrl.text.trim());
 
     if (!mounted) return;
 
-    if (error == null) {
-      final isAdmin = auth.isAdmin;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isAdmin ? 'Admin login successful' : 'Login successful',
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1DB954).withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.badge_rounded,
+                color: Color(0xFF1DB954),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              "Your Hex ID",
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5FAF6),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFF1DB954).withValues(alpha: 0.3),
+                ),
+              ),
+              child: SelectableText(
+                result ?? "Error retrieving Hex ID",
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.4,
+                  color: Color(0xFF17a349),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1DB954),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                "OK, Got it",
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              ),
+            ),
           ),
-          backgroundColor: const Color(0xFF1DB954),
-        ),
-      );
+        ],
+      ),
+    );
+  }
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error),
-          backgroundColor: const Color(0xFFE53935),
-        ),
-      );
-    }
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _animCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -86,7 +131,7 @@ class _LoginScreenState extends State<LoginScreen>
     final width = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4F0),
+      backgroundColor: const Color(0xFFF4F7F5),
       body: Stack(
         children: [
           Positioned(
@@ -97,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen>
               height: 260,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF1DB954)..withValues(alpha: 0.10),
+                color: const Color(0xFF1DB954).withOpacity(0.10),
               ),
             ),
           ),
@@ -105,11 +150,11 @@ class _LoginScreenState extends State<LoginScreen>
             bottom: -100,
             left: -80,
             child: Container(
-              width: 320,
-              height: 320,
+              width: 300,
+              height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF1DB954)..withValues(alpha: 0.07),
+                color: const Color(0xFF1DB954).withOpacity(0.06),
               ),
             ),
           ),
@@ -128,18 +173,14 @@ class _LoginScreenState extends State<LoginScreen>
                       borderRadius: BorderRadius.circular(28),
                       boxShadow: [
                         BoxShadow(
-                          blurRadius: 40,
-                          offset: const Offset(0, 12),
-                          color: const Color(
-                            0xFF1DB954,
-                          ).withValues(alpha: 0.08),
+                          blurRadius: 30,
+                          offset: const Offset(0, 10),
+                          color: const Color(0xFF1DB954).withOpacity(0.08),
                         ),
                         BoxShadow(
-                          blurRadius: 20,
+                          blurRadius: 16,
                           offset: const Offset(0, 4),
-                          color: const Color(
-                            0xFF000000,
-                          ).withValues(alpha: 0.06),
+                          color: Colors.black.withOpacity(0.05),
                         ),
                       ],
                     ),
@@ -172,16 +213,16 @@ class _LoginScreenState extends State<LoginScreen>
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
-                                  Icons.storefront_rounded,
+                                  Icons.manage_search_rounded,
                                   size: 32,
                                   color: Color(0xFF1DB954),
                                 ),
                               ),
                               const SizedBox(height: 14),
                               const Text(
-                                'Welcome Back',
+                                'Recover Hex ID',
                                 style: TextStyle(
-                                  fontSize: 24,
+                                  fontSize: 22,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white,
                                   letterSpacing: 0.3,
@@ -189,7 +230,7 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Sign in to continue to Bock Store',
+                                'Enter your email to retrieve your ID',
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: Colors.white..withValues(alpha: 0.85),
@@ -207,92 +248,122 @@ class _LoginScreenState extends State<LoginScreen>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildLabel('Hex ID'),
-                                const SizedBox(height: 8),
-                                TextFormField(
-                                  controller: _hexIdCtrl,
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  decoration: _inputDecoration(
-                                    hint: 'e.g. 7f3a9c21d8',
-                                    icon: Icons.badge_rounded,
-                                  ),
-                                  validator: (v) => (v == null || v.isEmpty)
-                                      ? 'Enter your Hex ID'
-                                      : null,
-                                ),
-                                const SizedBox(height: 20),
-
-                                _buildLabel('Password'),
-                                const SizedBox(height: 8),
-                                TextFormField(
-                                  controller: _passwordCtrl,
-                                  obscureText: _obscure,
-                                  textInputAction: TextInputAction.done,
-                                  onFieldSubmitted: (_) => _submit(),
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  decoration: _inputDecoration(
-                                    hint: '••••••••',
-                                    icon: Icons.lock_rounded,
-                                    suffix: IconButton(
-                                      icon: Icon(
-                                        _obscure
-                                            ? Icons.visibility_rounded
-                                            : Icons.visibility_off_rounded,
-                                        color: const Color(0xFF1DB954),
-                                        size: 20,
-                                      ),
-                                      onPressed: () =>
-                                          setState(() => _obscure = !_obscure),
+                                // Info card
+                                Container(
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF5FAF6),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: const Color(
+                                        0xFF1DB954,
+                                      ).withValues(alpha: 0.25),
                                     ),
                                   ),
-                                  validator: (v) => (v == null || v.length < 6)
-                                      ? 'Min 6 characters'
-                                      : null,
-                                ),
-
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: TextButton(
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const ForgotHexIdScreen(),
+                                  child: Row(
+                                    children: const [
+                                      Icon(
+                                        Icons.info_outline_rounded,
+                                        color: Color(0xFF1DB954),
+                                        size: 18,
+                                      ),
+                                      SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          "We'll look up the Hex ID associated with your registered email address.",
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Color(0xFF37474F),
+                                            height: 1.4,
+                                          ),
                                         ),
-                                      );
-                                    },
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: const Color(0xFF1DB954),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 4,
-                                        vertical: 8,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+
+                                const Text(
+                                  'Email Address',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF424242),
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                TextFormField(
+                                  controller: _emailCtrl,
+                                  keyboardType: TextInputType.emailAddress,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: 'you@example.com',
+                                    hintStyle: TextStyle(
+                                      color: Colors.grey.shade400,
+                                      fontSize: 14,
+                                    ),
+                                    prefixIcon: const Icon(
+                                      Icons.email_rounded,
+                                      color: Color(0xFF1DB954),
+                                      size: 20,
+                                    ),
+                                    filled: true,
+                                    fillColor: const Color(0xFFF5FAF6),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 14,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                      borderSide: BorderSide(
+                                        color: Colors.grey.shade200,
                                       ),
                                     ),
-                                    child: const Text(
-                                      'Forgot Hex ID?',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                      borderSide: BorderSide(
+                                        color: Colors.grey.shade200,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                      borderSide: const BorderSide(
+                                        color: Color(0xFF1DB954),
+                                        width: 1.8,
+                                      ),
+                                    ),
+                                    errorBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                      borderSide: const BorderSide(
+                                        color: Color(0xFFE53935),
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    focusedErrorBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                      borderSide: const BorderSide(
+                                        color: Color(0xFFE53935),
+                                        width: 1.8,
                                       ),
                                     ),
                                   ),
+                                  validator: (v) =>
+                                      (v == null || !v.contains('@'))
+                                      ? 'Enter a valid email'
+                                      : null,
                                 ),
 
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 28),
 
-                                // Login button
                                 SizedBox(
                                   width: double.infinity,
                                   height: 52,
                                   child: ElevatedButton(
-                                    onPressed: loading ? null : _submit,
+                                    onPressed: loading ? null : _getHexId,
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: const Color(0xFF1DB954),
                                       foregroundColor: Colors.white,
@@ -315,7 +386,7 @@ class _LoginScreenState extends State<LoginScreen>
                                             ),
                                           )
                                         : const Text(
-                                            'Sign In',
+                                            'Retrieve Hex ID',
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w700,
@@ -331,20 +402,14 @@ class _LoginScreenState extends State<LoginScreen>
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Text(
-                                      "Don't have an account?",
+                                      "Remember your Hex ID?",
                                       style: TextStyle(
                                         fontSize: 13,
                                         color: Colors.grey.shade600,
                                       ),
                                     ),
                                     TextButton(
-                                      onPressed: () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const RegisterScreen(),
-                                        ),
-                                      ),
+                                      onPressed: () => Navigator.pop(context),
                                       style: TextButton.styleFrom(
                                         foregroundColor: const Color(
                                           0xFF1DB954,
@@ -354,7 +419,7 @@ class _LoginScreenState extends State<LoginScreen>
                                         ),
                                       ),
                                       child: const Text(
-                                        'Register',
+                                        'Sign In',
                                         style: TextStyle(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w700,
@@ -375,54 +440,6 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildLabel(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        color: Color(0xFF424242),
-        letterSpacing: 0.2,
-      ),
-    );
-  }
-
-  InputDecoration _inputDecoration({
-    required String hint,
-    required IconData icon,
-    Widget? suffix,
-  }) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-      prefixIcon: Icon(icon, color: const Color(0xFF1DB954), size: 20),
-      suffixIcon: suffix,
-      filled: true,
-      fillColor: const Color(0xFFF5FAF6),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.grey.shade200),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.grey.shade200),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFF1DB954), width: 1.8),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFFE53935), width: 1.5),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFFE53935), width: 1.8),
       ),
     );
   }

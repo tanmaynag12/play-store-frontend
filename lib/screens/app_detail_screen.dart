@@ -36,13 +36,13 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
 
   RatingModel? userRating;
 
-  bool wishlisted = false;
-  bool bookmarked = false;
   bool isDownloading = false;
 
   int selectedRating = 0;
   TextEditingController reviewController = TextEditingController();
   bool submittingRating = false;
+
+  static const _green = Color(0xFF1DB954);
 
   @override
   void initState() {
@@ -62,7 +62,11 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Delete App"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          "Delete App",
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         content: const Text(
           "Are you sure you want to delete this app? This action cannot be undone.",
         ),
@@ -71,43 +75,44 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
             onPressed: () => Navigator.pop(context, false),
             child: const Text("Cancel"),
           ),
-          TextButton(
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade400,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+            child: const Text("Delete"),
           ),
         ],
       ),
     );
-
-    if (confirmed == true) {
-      await _deleteApp();
-    }
+    if (confirmed == true) await _deleteApp();
   }
 
   Future<void> _deleteApp() async {
     final auth = context.read<AuthProvider>();
-
     final response = await http.delete(
       Uri.parse("${ApiConfig.baseUrl}/api/admin/apps/${currentApp.id}"),
       headers: {"Authorization": "Bearer ${auth.token}"},
     );
-
     if (!mounted) return;
-
     if (response.statusCode == 200) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("App deleted successfully"),
-          backgroundColor: Colors.green,
+          backgroundColor: _green,
         ),
       );
-
       Navigator.pop(context, true);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Failed to delete app"),
-          backgroundColor: Colors.red,
+          backgroundColor: Color(0xFFE53935),
         ),
       );
     }
@@ -118,16 +123,12 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
       final res = await http.get(
         Uri.parse("${ApiConfig.baseUrl}/api/apps/${widget.app.id}"),
       );
-
       if (res.statusCode == 200) {
         final data = json.decode(res.body);
-
         if (!mounted) return;
-
         setState(() {
           currentApp = AppModel.fromJson(data);
           ratingDistribution.clear();
-
           if (data["rating_distribution"] != null) {
             for (final item in data["rating_distribution"]) {
               ratingDistribution[item["rating"]] = item["count"];
@@ -150,33 +151,23 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
 
   Future<void> installApp() async {
     if (isDownloading) return;
-
     setState(() => isDownloading = true);
-
     final url = Uri.parse(
       "${ApiConfig.baseUrl}/api/apps/${currentApp.id}/download",
     );
-
     bool launched = false;
-
     if (kIsWeb) {
       launched = await launchUrl(url, mode: LaunchMode.platformDefault);
     } else {
       launched = await launchUrl(url, mode: LaunchMode.externalApplication);
     }
-
-    if (!launched) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("Download failed")));
-      }
-    } else {
-      if (launched) {
-        await fetchAppDetails();
-      }
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Download failed")));
+    } else if (launched) {
+      await fetchAppDetails();
     }
-
     setState(() => isDownloading = false);
   }
 
@@ -184,24 +175,19 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
     try {
       final result = await _ratingService.getRatings(currentApp.id);
       final auth = context.read<AuthProvider>();
-
       RatingModel? existing;
-
       if (auth.user?.id != null) {
         try {
           existing = result.firstWhere((r) => r.userId == auth.user!.id);
         } catch (_) {}
       }
-
       setState(() {
         ratings = result;
         userRating = existing;
-
         if (existing != null) {
           selectedRating = existing.rating;
           reviewController.text = existing.reviewText ?? "";
         }
-
         loadingRatings = false;
       });
     } catch (_) {
@@ -210,68 +196,16 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
     }
   }
 
-  Widget _buildRatingDistribution() {
-    final total = currentApp.totalReviews == 0 ? 1 : currentApp.totalReviews;
-
-    return Column(
-      children: List.generate(5, (i) {
-        final star = 5 - i;
-        final count = ratingDistribution[star] ?? 0;
-
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
-          child: Row(
-            children: [
-              SizedBox(width: 30, child: Text("$star★")),
-              Expanded(
-                child: LinearProgressIndicator(
-                  value: count / total,
-                  backgroundColor: Colors.grey[300],
-                  color: Colors.green,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text("$count"),
-            ],
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _buildStarPicker() {
-    return Row(
-      children: List.generate(5, (index) {
-        final starIndex = index + 1;
-        return IconButton(
-          icon: Icon(
-            starIndex <= selectedRating ? Icons.star : Icons.star_border,
-            color: Colors.amber,
-          ),
-          onPressed: () {
-            setState(() {
-              selectedRating = starIndex;
-            });
-          },
-        );
-      }),
-    );
-  }
-
   Future<void> submitRating() async {
     if (selectedRating == 0) return;
-
     final auth = context.read<AuthProvider>();
-
     if (!auth.isLoggedIn) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Please login to rate.")));
       return;
     }
-
     setState(() => submittingRating = true);
-
     final response = await http.post(
       Uri.parse("${ApiConfig.baseUrl}/api/apps/${currentApp.id}/rate"),
       headers: {
@@ -283,41 +217,35 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
         "review_text": reviewController.text.trim(),
       }),
     );
-
     if (response.statusCode == 200 || response.statusCode == 201) {
       await fetchAppDetails();
       await fetchRatings();
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             userRating != null ? "Review updated." : "Review submitted.",
           ),
+          backgroundColor: _green,
         ),
       );
     }
-
     setState(() => submittingRating = false);
   }
 
   Future<void> deleteRating() async {
     final auth = context.read<AuthProvider>();
-
     final response = await http.delete(
       Uri.parse("${ApiConfig.baseUrl}/api/apps/${currentApp.id}/rate"),
       headers: {"Authorization": "Bearer ${auth.token}"},
     );
-
     if (response.statusCode == 200) {
       await fetchAppDetails();
       await fetchRatings();
-
       setState(() {
         selectedRating = 0;
         reviewController.clear();
         userRating = null;
       });
-
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Review deleted.")));
@@ -334,19 +262,31 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
         return false;
       },
       child: Scaffold(
-        backgroundColor: Colors.grey[100],
+        backgroundColor: const Color(0xFFF0F4F0),
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.black),
+          surfaceTintColor: Colors.white,
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back_rounded,
+              color: Color(0xFF1A1A1A),
+            ),
+            onPressed: () => Navigator.pop(context, true),
+          ),
           title: Text(
             currentApp.name,
-            style: const TextStyle(color: Colors.black),
+            style: const TextStyle(
+              color: Color(0xFF1A1A1A),
+              fontWeight: FontWeight.w700,
+              fontSize: 17,
+            ),
           ),
           actions: [
             if (auth.isAdmin) ...[
               IconButton(
-                icon: const Icon(Icons.edit),
+                icon: const Icon(Icons.edit_rounded, color: _green),
+                tooltip: "Edit",
                 onPressed: () async {
                   final result = await Navigator.push(
                     context,
@@ -354,7 +294,6 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                       builder: (_) => AdminUploadScreen(app: currentApp),
                     ),
                   );
-
                   if (result == true && mounted) {
                     fetchAppDetails();
                     fetchRatings();
@@ -362,113 +301,469 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                 },
               ),
               IconButton(
-                icon: const Icon(Icons.delete, color: Colors.red),
+                icon: Icon(Icons.delete_rounded, color: Colors.red.shade400),
+                tooltip: "Delete",
                 onPressed: _confirmDelete,
               ),
             ],
+            const SizedBox(width: 8),
           ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Divider(height: 1, color: Colors.grey.shade100),
+          ),
         ),
         body: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1100),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _leftPanel(),
-                    const SizedBox(height: 40),
-
-                    const Text(
-                      "Rate this app",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    _buildStarPicker(),
-
-                    TextField(
-                      controller: reviewController,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        hintText: "Write a review (optional)",
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    ElevatedButton(
-                      onPressed: submittingRating ? null : submitRating,
-                      child: submittingRating
-                          ? const SizedBox(
-                              height: 18,
-                              width: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(
-                              userRating != null
-                                  ? "Update Review"
-                                  : "Submit Review",
+            constraints: const BoxConstraints(maxWidth: 860),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Hero card ──────────────────────────────────────
+                  _card(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: Image.network(
+                                "${ApiConfig.baseUrl}${currentApp.iconUrl}",
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.cover,
+                              ),
                             ),
-                    ),
-
-                    if (userRating != null)
-                      TextButton(
-                        onPressed: deleteRating,
-                        child: const Text(
-                          "Delete Review",
-                          style: TextStyle(color: Colors.red),
+                            const SizedBox(width: 18),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    currentApp.name,
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF1A1A1A),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    currentApp.developer ?? "Unknown Developer",
+                                    style: const TextStyle(
+                                      color: _green,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 6,
+                                    children: [
+                                      _chip(
+                                        Icons.code_rounded,
+                                        "v${currentApp.version ?? 'N/A'}",
+                                      ),
+                                      _chip(
+                                        Icons.storage_rounded,
+                                        currentApp.size ?? 'N/A',
+                                      ),
+                                      if (currentApp.createdAt != null)
+                                        _chip(
+                                          Icons.update_rounded,
+                                          currentApp.createdAt!
+                                              .split('T')
+                                              .first,
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
+                        const SizedBox(height: 20),
 
-                    const Divider(thickness: 1),
+                        // Stats row
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF5FAF6),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFE0EEE5)),
+                          ),
+                          child: Row(
+                            children: [
+                              _statItem(
+                                currentApp.averageRating != null
+                                    ? "${currentApp.averageRating}★"
+                                    : "—",
+                                "${currentApp.totalReviews} reviews",
+                              ),
+                              _statDivider(),
+                              _statItem(
+                                "${currentApp.downloadCount}",
+                                "Downloads",
+                              ),
+                              _statDivider(),
+                              _statItem(
+                                currentApp.ratedFor ?? "N/A",
+                                "Rated for",
+                              ),
+                            ],
+                          ),
+                        ),
 
-                    const SizedBox(height: 24),
+                        const SizedBox(height: 18),
 
-                    _buildRatingDistribution(),
-
-                    const SizedBox(height: 24),
-
-                    const Text(
-                      "All Reviews",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                        // Install button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton.icon(
+                            onPressed: isDownloading ? null : installApp,
+                            icon: isDownloading
+                                ? const SizedBox(
+                                    height: 18,
+                                    width: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.download_rounded, size: 20),
+                            label: Text(
+                              isDownloading ? "Downloading..." : "Install",
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _green,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
 
-                    const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                    if (loadingRatings)
-                      const CircularProgressIndicator()
-                    else if (ratings.isEmpty)
-                      const Text("No reviews yet")
-                    else
-                      Column(
-                        children: ratings.map((rating) {
-                          final formattedDate =
-                              "${rating.createdAt.day}/${rating.createdAt.month}/${rating.createdAt.year}";
+                  // ── Screenshots ────────────────────────────────────
+                  _card(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _sectionTitle("Screenshots"),
+                        const SizedBox(height: 16),
+                        if (loadingScreenshots)
+                          const Center(
+                            child: CircularProgressIndicator(color: _green),
+                          )
+                        else if (screenshots.isNotEmpty)
+                          SizedBox(
+                            height: 240,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: screenshots.length,
+                              itemBuilder: (context, index) => Padding(
+                                padding: const EdgeInsets.only(right: 14),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: Image.network(
+                                    screenshots[index],
+                                    width: 130,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          )
+                        else
+                          Text(
+                            "No screenshots available",
+                            style: TextStyle(
+                              color: Colors.grey.shade400,
+                              fontSize: 13,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
 
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
+                  const SizedBox(height: 16),
+
+                  // ── About ──────────────────────────────────────────
+                  _card(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _sectionTitle("About this app"),
+                        const SizedBox(height: 12),
+                        Text(
+                          currentApp.description,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF424242),
+                            height: 1.6,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // ── Rate this app ──────────────────────────────────
+                  _card(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _sectionTitle("Rate this app"),
+                        const SizedBox(height: 14),
+
+                        // Star picker
+                        Row(
+                          children: List.generate(5, (index) {
+                            final starIndex = index + 1;
+                            return GestureDetector(
+                              onTap: () =>
+                                  setState(() => selectedRating = starIndex),
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 4),
+                                child: Icon(
+                                  starIndex <= selectedRating
+                                      ? Icons.star_rounded
+                                      : Icons.star_outline_rounded,
+                                  color: const Color(0xFFFFC107),
+                                  size: 36,
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                        const SizedBox(height: 14),
+
+                        TextField(
+                          controller: reviewController,
+                          maxLines: 3,
+                          style: const TextStyle(fontSize: 14),
+                          decoration: InputDecoration(
+                            hintText: "Write a review (optional)",
+                            hintStyle: TextStyle(
+                              color: Colors.grey.shade400,
+                              fontSize: 14,
+                            ),
+                            filled: true,
+                            fillColor: const Color(0xFFF5FAF6),
+                            contentPadding: const EdgeInsets.all(14),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade200,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade200,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: _green,
+                                width: 1.8,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        Row(
+                          children: [
+                            Expanded(
+                              child: SizedBox(
+                                height: 46,
+                                child: ElevatedButton(
+                                  onPressed: submittingRating
+                                      ? null
+                                      : submitRating,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: _green,
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: submittingRating
+                                      ? const SizedBox(
+                                          height: 18,
+                                          width: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : Text(
+                                          userRating != null
+                                              ? "Update Review"
+                                              : "Submit Review",
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                            ),
+                            if (userRating != null) ...[
+                              const SizedBox(width: 12),
+                              SizedBox(
+                                height: 46,
+                                child: OutlinedButton(
+                                  onPressed: deleteRating,
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.red.shade400,
+                                    side: BorderSide(
+                                      color: Colors.red.shade200,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    "Delete",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // ── Rating Distribution + Reviews ──────────────────
+                  _card(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _sectionTitle("Reviews"),
+                        const SizedBox(height: 16),
+
+                        // Distribution
+                        ...List.generate(5, (i) {
+                          final star = 5 - i;
+                          final total = currentApp.totalReviews == 0
+                              ? 1
+                              : currentApp.totalReviews;
+                          final count = ratingDistribution[star] ?? 0;
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 3),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 28,
+                                  child: Text(
+                                    "$star",
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF757575),
+                                    ),
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.star_rounded,
+                                  size: 13,
+                                  color: Color(0xFFFFC107),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: LinearProgressIndicator(
+                                      value: count / total,
+                                      backgroundColor: Colors.grey.shade100,
+                                      color: _green,
+                                      minHeight: 6,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 24,
+                                  child: Text(
+                                    "$count",
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF757575),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+
+                        const SizedBox(height: 24),
+                        Divider(color: Colors.grey.shade100),
+                        const SizedBox(height: 16),
+
+                        if (loadingRatings)
+                          const Center(
+                            child: CircularProgressIndicator(color: _green),
+                          )
+                        else if (ratings.isEmpty)
+                          Text(
+                            "No reviews yet",
+                            style: TextStyle(
+                              color: Colors.grey.shade400,
+                              fontSize: 13,
+                            ),
+                          )
+                        else
+                          ...ratings.map((rating) {
+                            final formattedDate =
+                                "${rating.createdAt.day}/${rating.createdAt.month}/${rating.createdAt.year}";
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 14),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF9FBF9),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: const Color(0xFFE8F5E9),
+                                ),
+                              ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
                                     children: [
                                       CircleAvatar(
-                                        radius: 20,
-                                        backgroundColor: Colors.green.shade300,
+                                        radius: 18,
+                                        backgroundColor: _green.withOpacity(
+                                          0.15,
+                                        ),
                                         backgroundImage:
                                             rating.profileImage != null
                                             ? NetworkImage(
@@ -480,13 +775,14 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                                                 rating.userName[0]
                                                     .toUpperCase(),
                                                 style: const TextStyle(
-                                                  color: Colors.white,
+                                                  color: _green,
                                                   fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
                                                 ),
                                               )
                                             : null,
                                       ),
-                                      const SizedBox(width: 12),
+                                      const SizedBox(width: 10),
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment:
@@ -495,44 +791,57 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                                             Text(
                                               rating.userName,
                                               style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 14,
+                                                color: Color(0xFF1A1A1A),
                                               ),
                                             ),
                                             Text(
                                               formattedDate,
                                               style: const TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey,
+                                                fontSize: 11,
+                                                color: Color(0xFFBDBDBD),
                                               ),
                                             ),
                                           ],
                                         ),
                                       ),
+                                      Row(
+                                        children: List.generate(
+                                          5,
+                                          (i) => Icon(
+                                            i < rating.rating
+                                                ? Icons.star_rounded
+                                                : Icons.star_outline_rounded,
+                                            color: const Color(0xFFFFC107),
+                                            size: 14,
+                                          ),
+                                        ),
+                                      ),
                                     ],
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    "⭐ ${rating.rating}",
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
                                   if (rating.reviewText != null &&
-                                      rating.reviewText!.isNotEmpty)
-                                    Text(rating.reviewText!),
+                                      rating.reviewText!.isNotEmpty) ...[
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      rating.reviewText!,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: Color(0xFF424242),
+                                        height: 1.5,
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
+                            );
+                          }),
+                      ],
+                    ),
+                  ),
 
-                    const SizedBox(height: 48),
-
-                    _rightPanel(),
-                  ],
-                ),
+                  const SizedBox(height: 24),
+                ],
               ),
             ),
           ),
@@ -541,151 +850,85 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
     );
   }
 
-  Widget _leftPanel() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Image.network(
-                "${ApiConfig.baseUrl}${currentApp.iconUrl}",
-                width: 120,
-                height: 120,
-                fit: BoxFit.cover,
-              ),
-            ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    currentApp.name,
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    currentApp.developer ?? "Unknown Developer",
-                    style: const TextStyle(
-                      color: Colors.green,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text("Version: ${currentApp.version ?? 'N/A'}"),
-                  Text("Size: ${currentApp.size ?? 'N/A'}"),
-                  Text(
-                    "Last updated: ${currentApp.createdAt != null ? currentApp.createdAt!.split('T').first : 'Unknown'}",
-                  ),
-                  const SizedBox(height: 20),
-
-                  SizedBox(
-                    width: 200,
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        await installApp();
-                      },
-                      child: const Text("Install"),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 28),
-
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _StatItem(
-              label: currentApp.averageRating != null
-                  ? "${currentApp.averageRating}★"
-                  : "0★",
-              sub: "${currentApp.totalReviews} reviews",
-            ),
-            _StatItem(label: "${currentApp.downloadCount}", sub: "Downloads"),
-            _StatItem(label: currentApp.ratedFor ?? "N/A", sub: "Rated for"),
-          ],
-        ),
-      ],
+  Widget _card({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.04),
+          ),
+        ],
+      ),
+      child: child,
     );
   }
 
-  Widget _rightPanel() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Screenshots",
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 24),
+  Widget _sectionTitle(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF1A1A1A),
+      ),
+    );
+  }
 
-        if (loadingScreenshots)
-          const CircularProgressIndicator()
-        else if (screenshots.isNotEmpty)
-          SizedBox(
-            height: 300,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: screenshots.length,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 20),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Image.network(
-                      screenshots[index],
-                      width: 160,
-                      height: 280,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                );
-              },
+  Widget _chip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5FAF6),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE0EEE5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: const Color(0xFF1DB954)),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF424242),
+              fontWeight: FontWeight.w500,
             ),
           ),
-
-        const SizedBox(height: 48),
-
-        const Text(
-          "About this app",
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-        ),
-
-        const SizedBox(height: 16),
-
-        Text(currentApp.description),
-      ],
+        ],
+      ),
     );
   }
-}
 
-class _StatItem extends StatelessWidget {
-  final String label;
-  final String sub;
-
-  const _StatItem({required this.label, required this.sub});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 4),
-        Text(sub, style: const TextStyle(fontSize: 13, color: Colors.grey)),
-      ],
+  Widget _statItem(String value, String label) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF1A1A1A),
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E)),
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _statDivider() {
+    return Container(width: 1, height: 36, color: const Color(0xFFE0EEE5));
   }
 }
