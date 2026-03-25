@@ -151,23 +151,51 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
 
   Future<void> installApp() async {
     if (isDownloading) return;
+
     setState(() => isDownloading = true);
-    final url = Uri.parse(
-      "${ApiConfig.baseUrl}/api/apps/${currentApp.id}/download",
-    );
-    bool launched = false;
-    if (kIsWeb) {
-      launched = await launchUrl(url, mode: LaunchMode.platformDefault);
-    } else {
-      launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+
+    final auth = context.read<AuthProvider>();
+
+    try {
+      final response = await http.get(
+        Uri.parse("${ApiConfig.baseUrl}/api/apps/${currentApp.id}/download"),
+        headers: {"Authorization": "Bearer ${auth.token}"},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final downloadUrl = data["download_url"];
+
+        final uri = Uri.parse(downloadUrl);
+
+        bool launched;
+
+        if (kIsWeb) {
+          launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
+        } else {
+          launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+
+        if (!launched && mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text("Download failed")));
+        } else {
+          await fetchAppDetails();
+        }
+      } else {
+        throw Exception("Download API failed");
+      }
+    } catch (e) {
+      print("Download error: $e");
+
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Download failed")));
+      }
     }
-    if (!launched && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Download failed")));
-    } else if (launched) {
-      await fetchAppDetails();
-    }
+
     setState(() => isDownloading = false);
   }
 

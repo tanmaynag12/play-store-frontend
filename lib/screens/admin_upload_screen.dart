@@ -137,7 +137,9 @@ class _AdminUploadScreenState extends State<AdminUploadScreen>
     request.fields["developer"] = developerController.text;
     request.fields["rated_for"] = ratedForController.text;
     request.fields["package_name"] = packageController.text;
-    request.fields["version_code"] = "1";
+    if (!isEdit) {
+      request.fields["version_code"] = "1";
+    }
 
     if (iconFile != null) {
       if (kIsWeb) {
@@ -350,7 +352,10 @@ class _AdminUploadScreenState extends State<AdminUploadScreen>
 
                           _buildLabel("App Name"),
                           const SizedBox(height: 8),
-                          _buildField(nameController, "e.g. My Awesome App"),
+                          _buildField(
+                            nameController,
+                            "provide a name for the app",
+                          ),
                           const SizedBox(height: 18),
 
                           _buildLabel("Description"),
@@ -384,7 +389,10 @@ class _AdminUploadScreenState extends State<AdminUploadScreen>
                                   children: [
                                     _buildLabel("Size"),
                                     const SizedBox(height: 8),
-                                    _buildField(sizeController, "e.g. 25 MB"),
+                                    _buildField(
+                                      sizeController,
+                                      "enter size with unit",
+                                    ),
                                   ],
                                 ),
                               ),
@@ -421,7 +429,7 @@ class _AdminUploadScreenState extends State<AdminUploadScreen>
                                     const SizedBox(height: 8),
                                     _buildField(
                                       packageController,
-                                      "e.g. org.fdroid.fdroid",
+                                      "enter the package name (unique identifier)",
                                     ),
                                   ],
                                 ),

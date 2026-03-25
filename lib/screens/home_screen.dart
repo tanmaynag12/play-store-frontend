@@ -14,6 +14,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'my_apps_screen.dart';
 import 'admin_logs_screen.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,6 +29,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<AppModel> apps = [];
   bool loading = true;
   String error = "";
+  List recentUpdates = [];
+  bool loadingUpdates = true;
 
   static const _green = Color(0xFF1DB954);
   static const _bg = Color(0xFFF0F4F0);
@@ -35,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     fetchApps();
+    fetchRecentUpdates();
   }
 
   @override
@@ -83,6 +88,23 @@ class _HomeScreenState extends State<HomeScreen> {
         error = "Network error. Is backend running?";
         loading = false;
       });
+    }
+  }
+
+  Future<void> fetchRecentUpdates() async {
+    try {
+      final res = await http.get(
+        Uri.parse("${ApiConfig.baseUrl}/api/apps/user/activity"),
+      );
+
+      final data = jsonDecode(res.body);
+
+      setState(() {
+        recentUpdates = data;
+        loadingUpdates = false;
+      });
+    } catch (e) {
+      setState(() => loadingUpdates = false);
     }
   }
 
@@ -551,26 +573,89 @@ class _HomeScreenState extends State<HomeScreen> {
               : RefreshIndicator(
                   color: _green,
                   onRefresh: fetchApps,
-                  child: ListView.builder(
+                  child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                    itemCount: apps.length,
-                    itemBuilder: (context, index) {
-                      final app = apps[index];
-                      return _AppListTile(
-                        app: app,
-                        isNewApp: isNewApp,
-                        onTap: () async {
-                          await markAppSeen(app.id);
-                          final deleted = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => AppDetailScreen(app: app),
+                    children: [
+                      const Text(
+                        "Recently Updated",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1A1A1A),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      loadingUpdates
+                          ? const Center(child: CircularProgressIndicator())
+                          : SizedBox(
+                              height: 140,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: recentUpdates.length,
+                                itemBuilder: (context, index) {
+                                  final app = recentUpdates[index];
+
+                                  return Container(
+                                    width: 110,
+                                    margin: const EdgeInsets.only(right: 12),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Container(
+                                          height: 70,
+                                          width: 70,
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                            color: Colors.grey.shade200,
+                                          ),
+                                          child: const Icon(Icons.android),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          app["app_name"],
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        Text(
+                                          "v${app["version"] ?? ""}",
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            color: Color(0xFF757575),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
-                          );
-                          if (deleted == true) fetchApps();
-                        },
-                      );
-                    },
+
+                      const SizedBox(height: 24),
+
+                      ...apps.map((app) {
+                        return _AppListTile(
+                          app: app,
+                          isNewApp: isNewApp,
+                          onTap: () async {
+                            await markAppSeen(app.id);
+                            final deleted = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => AppDetailScreen(app: app),
+                              ),
+                            );
+                            if (deleted == true) fetchApps();
+                          },
+                        );
+                      }).toList(),
+                    ],
                   ),
                 ),
         ),
@@ -773,6 +858,18 @@ class _AppListTile extends StatelessWidget {
     required this.onTap,
   });
 
+  String getButtonText(AppModel app) {
+    if (app.installedVersionCode == null) {
+      return "Install";
+    }
+
+    if (app.versionCode > app.installedVersionCode!) {
+      return "Update";
+    }
+
+    return "Open";
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -906,10 +1003,25 @@ class _AppListTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: Color(0xFFBDBDBD),
-                  size: 20,
+
+                // ✅ REPLACED ICON WITH BUTTON
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1DB954),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    getButtonText(app),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ],
             ),

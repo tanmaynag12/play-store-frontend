@@ -13,6 +13,7 @@ class AppModel {
   final double? averageRating;
   final int totalReviews;
   final int downloadCount;
+  final int? installedVersionCode;
 
   AppModel({
     required this.id,
@@ -23,6 +24,7 @@ class AppModel {
     required this.versionCode,
     this.version,
     this.size,
+    this.installedVersionCode,
     this.developer,
     this.ratedFor,
     this.createdAt,
@@ -49,6 +51,7 @@ class AppModel {
       packageName: json['package_name'],
       createdAt: json['created_at'],
       versionCode: json['version_code'],
+      installedVersionCode: json["installed_version_code"],
     );
   }
 }

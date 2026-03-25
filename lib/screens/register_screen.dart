@@ -377,7 +377,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                               fontWeight: FontWeight.w500,
                                             ),
                                             decoration: _inputDecoration(
-                                              hint: 'John',
+                                              hint: 'enter first name',
                                               icon: Icons.person_rounded,
                                             ),
                                             validator: (v) =>
@@ -405,7 +405,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                               fontWeight: FontWeight.w500,
                                             ),
                                             decoration: _inputDecoration(
-                                              hint: 'Doe',
+                                              hint: 'enter last name',
                                               icon: Icons.person_rounded,
                                             ),
                                             validator: (v) =>
@@ -491,7 +491,6 @@ class _RegisterScreenState extends State<RegisterScreen>
                                 _buildLabel('Gender'),
                                 const SizedBox(height: 8),
                                 DropdownButtonFormField<String>(
-                                  initialValue: _gender,
                                   style: const TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w500,
