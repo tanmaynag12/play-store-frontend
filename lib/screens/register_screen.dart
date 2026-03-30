@@ -83,12 +83,12 @@ class _RegisterScreenState extends State<RegisterScreen>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1DB954).withValues(alpha: 0.12),
+                  color: const Color(0xFF6A1B9A).withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.check_circle_rounded,
-                  color: Color(0xFF1DB954),
+                  color: Color(0xFF6A1B9A),
                   size: 22,
                 ),
               ),
@@ -120,7 +120,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                   color: const Color(0xFFF5FAF6),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: const Color(0xFF1DB954).withValues(alpha: 0.3),
+                    color: const Color(0xFF6A1B9A).withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
@@ -133,19 +133,19 @@ class _RegisterScreenState extends State<RegisterScreen>
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.4,
-                          color: Color(0xFF17a349),
+                          color: Color(0xFF6A1B9A),
                         ),
                       ),
                     ),
                     const SizedBox(width: 6),
                     Material(
-                      color: const Color(0xFF1DB954).withValues(alpha: 0.10),
+                      color: const Color(0xFF6A1B9A).withValues(alpha: 0.10),
                       borderRadius: BorderRadius.circular(8),
                       child: IconButton(
                         icon: const Icon(
                           Icons.copy_rounded,
                           size: 18,
-                          color: Color(0xFF1DB954),
+                          color: Color(0xFF6A1B9A),
                         ),
                         tooltip: "Copy Hex ID",
                         onPressed: () {
@@ -153,7 +153,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text("Hex ID copied"),
-                              backgroundColor: Color(0xFF1DB954),
+                              backgroundColor: Color(0xFF6A1B9A),
                             ),
                           );
                         },
@@ -200,7 +200,7 @@ class _RegisterScreenState extends State<RegisterScreen>
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1DB954),
+                  backgroundColor: Color(0xFF6A1B9A),
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
@@ -248,7 +248,7 @@ class _RegisterScreenState extends State<RegisterScreen>
               height: 220,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF1DB954).withValues(alpha: 0.09),
+                color: const Color(0xFF6A1B9A).withValues(alpha: 0.09),
               ),
             ),
           ),
@@ -260,7 +260,7 @@ class _RegisterScreenState extends State<RegisterScreen>
               height: 280,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF1DB954).withValues(alpha: 0.06),
+                color: const Color(0xFF6A1B9A).withValues(alpha: 0.06),
               ),
             ),
           ),
@@ -281,7 +281,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                           blurRadius: 40,
                           offset: const Offset(0, 12),
                           color: const Color(
-                            0xFF1DB954,
+                            0xFF6A1B9A,
                           ).withValues(alpha: 0.08),
                         ),
                         BoxShadow(
@@ -305,7 +305,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                           ),
                           decoration: const BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [Color(0xFF1DB954), Color(0xFF17a349)],
+                              colors: [Color(0xFF6A1B9A), Color(0xFF4A148C)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
@@ -435,7 +435,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                     suffix: IconButton(
                                       icon: const Icon(
                                         Icons.edit_calendar_rounded,
-                                        color: Color(0xFF1DB954),
+                                        color: Color(0xFF6A1B9A),
                                         size: 20,
                                       ),
                                       onPressed: () async {
@@ -448,7 +448,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                             data: Theme.of(context).copyWith(
                                               colorScheme:
                                                   const ColorScheme.light(
-                                                    primary: Color(0xFF1DB954),
+                                                    primary: Color(0xFF6A1B9A),
                                                   ),
                                             ),
                                             child: child!,
@@ -498,7 +498,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                   ),
                                   icon: const Icon(
                                     Icons.keyboard_arrow_down_rounded,
-                                    color: Color(0xFF1DB954),
+                                    color: Color(0xFF6A1B9A),
                                   ),
                                   decoration: _inputDecoration(
                                     hint: 'Select',
@@ -563,7 +563,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                         _obscure
                                             ? Icons.visibility_rounded
                                             : Icons.visibility_off_rounded,
-                                        color: const Color(0xFF1DB954),
+                                        color: const Color(0xFF6A1B9A),
                                         size: 20,
                                       ),
                                       onPressed: () =>
@@ -601,10 +601,10 @@ class _RegisterScreenState extends State<RegisterScreen>
                                   child: ElevatedButton(
                                     onPressed: loading ? null : _submit,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF1DB954),
+                                      backgroundColor: const Color(0xFF6A1B9A),
                                       foregroundColor: Colors.white,
                                       disabledBackgroundColor: const Color(
-                                        0xFF1DB954,
+                                        0xFF6A1B9A,
                                       ).withValues(alpha: 0.5),
                                       elevation: 0,
                                       shadowColor: Colors.transparent,
@@ -648,7 +648,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                       onPressed: () => Navigator.pop(context),
                                       style: TextButton.styleFrom(
                                         foregroundColor: const Color(
-                                          0xFF1DB954,
+                                          0xFF6A1B9A,
                                         ),
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 6,
@@ -700,7 +700,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     return InputDecoration(
       hintText: hint,
       hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-      prefixIcon: Icon(icon, color: const Color(0xFF1DB954), size: 20),
+      prefixIcon: Icon(icon, color: const Color(0xFF6A1B9A), size: 20),
       suffixIcon: suffix,
       filled: true,
       fillColor: const Color(0xFFF5FAF6),
@@ -715,7 +715,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFF1DB954), width: 1.8),
+        borderSide: const BorderSide(color: Color(0xFF6A1B9A), width: 1.8),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),

@@ -21,6 +21,17 @@ class ApiService {
     return headers;
   }
 
+  Future<void> uninstallApp(int appId, String token) async {
+    final response = await http.delete(
+      Uri.parse("${ApiConfig.baseUrl}/api/apps/$appId/uninstall"),
+      headers: {"Authorization": "Bearer $token"},
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception("Uninstall failed");
+    }
+  }
+
   static Future<List<dynamic>> fetchMyApps(String token) async {
     final res = await http.get(
       Uri.parse('${ApiConfig.baseUrl}/api/apps/my-apps'),

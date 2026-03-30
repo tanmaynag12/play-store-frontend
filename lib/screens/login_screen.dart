@@ -62,7 +62,7 @@ class _LoginScreenState extends State<LoginScreen>
           content: Text(
             isAdmin ? 'Admin login successful' : 'Login successful',
           ),
-          backgroundColor: const Color(0xFF1DB954),
+          backgroundColor: const Color(0xFF6A1B9A),
         ),
       );
 
@@ -97,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen>
               height: 260,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF1DB954)..withValues(alpha: 0.10),
+                color: const Color(0xFF6A1B9A).withValues(alpha: 0.10),
               ),
             ),
           ),
@@ -109,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen>
               height: 320,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF1DB954)..withValues(alpha: 0.07),
+                color: const Color(0xFF6A1B9A).withValues(alpha: 0.07),
               ),
             ),
           ),
@@ -131,14 +131,14 @@ class _LoginScreenState extends State<LoginScreen>
                           blurRadius: 40,
                           offset: const Offset(0, 12),
                           color: const Color(
-                            0xFF1DB954,
+                            0xFF6A1B9A,
                           ).withValues(alpha: 0.08),
                         ),
                         BoxShadow(
                           blurRadius: 20,
                           offset: const Offset(0, 4),
                           color: const Color(
-                            0xFF000000,
+                            0xFF6A1B9A,
                           ).withValues(alpha: 0.06),
                         ),
                       ],
@@ -154,7 +154,7 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                           decoration: const BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [Color(0xFF1DB954), Color(0xFF17a349)],
+                              colors: [Color(0xFF6A1B9A), Color(0xFF4A148C)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
@@ -174,7 +174,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 child: const Icon(
                                   Icons.storefront_rounded,
                                   size: 32,
-                                  color: Color(0xFF1DB954),
+                                  color: Color(0xFF6A1B9A),
                                 ),
                               ),
                               const SizedBox(height: 14),
@@ -244,7 +244,7 @@ class _LoginScreenState extends State<LoginScreen>
                                         _obscure
                                             ? Icons.visibility_rounded
                                             : Icons.visibility_off_rounded,
-                                        color: const Color(0xFF1DB954),
+                                        color: const Color(0xFF6A1B9A),
                                         size: 20,
                                       ),
                                       onPressed: () =>
@@ -269,7 +269,7 @@ class _LoginScreenState extends State<LoginScreen>
                                       );
                                     },
                                     style: TextButton.styleFrom(
-                                      foregroundColor: const Color(0xFF1DB954),
+                                      foregroundColor: const Color(0xFF6A1B9A),
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 4,
                                         vertical: 8,
@@ -294,10 +294,10 @@ class _LoginScreenState extends State<LoginScreen>
                                   child: ElevatedButton(
                                     onPressed: loading ? null : _submit,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF1DB954),
+                                      backgroundColor: const Color(0xFF6A1B9A),
                                       foregroundColor: Colors.white,
                                       disabledBackgroundColor: const Color(
-                                        0xFF1DB954,
+                                        0xFF6A1B9A,
                                       ).withValues(alpha: 0.5),
                                       elevation: 0,
                                       shadowColor: Colors.transparent,
@@ -347,7 +347,7 @@ class _LoginScreenState extends State<LoginScreen>
                                       ),
                                       style: TextButton.styleFrom(
                                         foregroundColor: const Color(
-                                          0xFF1DB954,
+                                          0xFF6A1B9A,
                                         ),
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 6,
@@ -399,7 +399,7 @@ class _LoginScreenState extends State<LoginScreen>
     return InputDecoration(
       hintText: hint,
       hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-      prefixIcon: Icon(icon, color: const Color(0xFF1DB954), size: 20),
+      prefixIcon: Icon(icon, color: Color(0xFF6A1B9A), size: 20),
       suffixIcon: suffix,
       filled: true,
       fillColor: const Color(0xFFF5FAF6),
@@ -414,7 +414,7 @@ class _LoginScreenState extends State<LoginScreen>
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFF1DB954), width: 1.8),
+        borderSide: const BorderSide(color: Color(0xFF6A1B9A), width: 1.8),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),

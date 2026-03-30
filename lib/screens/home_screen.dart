@@ -32,7 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List recentUpdates = [];
   bool loadingUpdates = true;
 
-  static const _green = Color(0xFF1DB954);
+  static const _purple = Color(0xFF6A1B9A);
   static const _bg = Color(0xFFF0F4F0);
 
   @override
@@ -128,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (loading) {
       return const Scaffold(
         backgroundColor: _bg,
-        body: Center(child: CircularProgressIndicator(color: _green)),
+        body: Center(child: CircularProgressIndicator(color: _purple)),
       );
     }
 
@@ -168,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: const Icon(Icons.refresh_rounded, size: 18),
                 label: const Text("Retry"),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _green,
+                  backgroundColor: _purple,
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
@@ -210,12 +210,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   Container(
                     padding: const EdgeInsets.all(7),
                     decoration: BoxDecoration(
-                      color: _green.withOpacity(0.10),
+                      color: _purple.withOpacity(0.10),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
                       Icons.storefront_rounded,
-                      color: _green,
+                      color: _purple,
                       size: 22,
                     ),
                   ),
@@ -252,7 +252,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           prefixIcon: const Icon(
                             Icons.search_rounded,
                             size: 18,
-                            color: _green,
+                            color: _purple,
                           ),
                           contentPadding: const EdgeInsets.symmetric(
                             vertical: 10,
@@ -283,12 +283,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: _green.withOpacity(0.08),
+                            color: _purple.withOpacity(0.08),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(
                             Icons.admin_panel_settings_rounded,
-                            color: _green,
+                            color: _purple,
                             size: 20,
                           ),
                         ),
@@ -314,12 +314,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: _green.withOpacity(0.08),
+                            color: _purple.withOpacity(0.08),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(
                             Icons.history_rounded,
-                            color: _green,
+                            color: _purple,
                             size: 20,
                           ),
                         ),
@@ -399,7 +399,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           icon: CircleAvatar(
                             radius: 17,
-                            backgroundColor: _green.withOpacity(0.15),
+                            backgroundColor: _purple.withOpacity(0.15),
                             backgroundImage: auth.user?.profileImage != null
                                 ? NetworkImage(
                                     "${ApiConfig.baseUrl}${auth.user!.profileImage}",
@@ -409,7 +409,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ? Text(
                                     auth.user!.name[0].toUpperCase(),
                                     style: const TextStyle(
-                                      color: _green,
+                                      color: _purple,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                     ),
@@ -424,7 +424,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   Icon(
                                     Icons.image_rounded,
                                     size: 18,
-                                    color: _green,
+                                    color: _purple,
                                   ),
                                   SizedBox(width: 10),
                                   Text("Change Profile Image"),
@@ -438,7 +438,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   Icon(
                                     Icons.apps_rounded,
                                     size: 18,
-                                    color: _green,
+                                    color: _purple,
                                   ),
                                   SizedBox(width: 10),
                                   Text("My Apps"),
@@ -488,7 +488,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: _green,
+                            backgroundColor: _purple,
                             foregroundColor: Colors.white,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
@@ -571,7 +571,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 )
               : RefreshIndicator(
-                  color: _green,
+                  color: _purple,
                   onRefresh: fetchApps,
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
@@ -697,7 +697,7 @@ class _AppCardState extends State<_AppCard> {
           boxShadow: [
             BoxShadow(
               color: _hovered
-                  ? const Color(0xFF1DB954).withOpacity(0.12)
+                  ? const Color(0xFF6A1B9A).withOpacity(0.12)
                   : Colors.black.withOpacity(0.05),
               blurRadius: _hovered ? 24 : 14,
               offset: Offset(0, _hovered ? 8 : 4),
@@ -730,7 +730,7 @@ class _AppCardState extends State<_AppCard> {
                         ),
                         child: const Icon(
                           Icons.apps_rounded,
-                          color: Color(0xFF1DB954),
+                          color: Color(0xFF6A1B9A),
                           size: 36,
                         ),
                       ),
@@ -767,7 +767,7 @@ class _AppCardState extends State<_AppCard> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1DB954),
+                                color: const Color(0xFF6A1B9A),
                                 borderRadius: BorderRadius.circular(5),
                               ),
                               child: const Text(
@@ -908,7 +908,7 @@ class _AppListTile extends StatelessWidget {
                       color: const Color(0xFFF5FAF6),
                       child: const Icon(
                         Icons.apps_rounded,
-                        color: Color(0xFF1DB954),
+                        color: Color(0xFF6A1B9A),
                       ),
                     ),
                   ),
@@ -945,7 +945,7 @@ class _AppListTile extends StatelessWidget {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF1DB954),
+                                  color: const Color(0xFF6A1B9A),
                                   borderRadius: BorderRadius.circular(5),
                                 ),
                                 child: const Text(
@@ -1004,14 +1004,13 @@ class _AppListTile extends StatelessWidget {
                   ),
                 ),
 
-                // ✅ REPLACED ICON WITH BUTTON
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
                     vertical: 7,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1DB954),
+                    color: const Color(0xFF6A1B9A),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(

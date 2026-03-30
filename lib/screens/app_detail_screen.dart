@@ -42,7 +42,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
   TextEditingController reviewController = TextEditingController();
   bool submittingRating = false;
 
-  static const _green = Color(0xFF1DB954);
+  static const _purple = Color(0xFF6A1B9A);
 
   @override
   void initState() {
@@ -104,7 +104,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("App deleted successfully"),
-          backgroundColor: _green,
+          backgroundColor: _purple,
         ),
       );
       Navigator.pop(context, true);
@@ -118,10 +118,53 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
     }
   }
 
+  Future<void> uninstallApp() async {
+    final auth = context.read<AuthProvider>();
+
+    final response = await http.delete(
+      Uri.parse("${ApiConfig.baseUrl}/api/apps/${currentApp.id}/uninstall"),
+      headers: {"Authorization": "Bearer ${auth.token}"},
+    );
+
+    if (response.statusCode == 200) {
+      await fetchAppDetails(); // VERY IMPORTANT
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Uninstall failed")));
+    }
+  }
+
+  void confirmUninstall() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Uninstall App"),
+        content: const Text("Are you sure you want to uninstall?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await uninstallApp();
+            },
+            child: const Text("Uninstall"),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> fetchAppDetails() async {
     try {
+      final auth = context.read<AuthProvider>();
+
       final res = await http.get(
         Uri.parse("${ApiConfig.baseUrl}/api/apps/${widget.app.id}"),
+        headers: {"Authorization": "Bearer ${auth.token}"},
       );
       if (res.statusCode == 200) {
         final data = json.decode(res.body);
@@ -253,7 +296,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
           content: Text(
             userRating != null ? "Review updated." : "Review submitted.",
           ),
-          backgroundColor: _green,
+          backgroundColor: _purple,
         ),
       );
     }
@@ -283,6 +326,21 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    bool isInstalled = currentApp.installedVersionCode != null;
+
+    bool isUpdate =
+        isInstalled &&
+        currentApp.installedVersionCode != currentApp.versionCode;
+
+    String buttonText;
+
+    if (!isInstalled) {
+      buttonText = "Install";
+    } else if (isUpdate) {
+      buttonText = "Update";
+    } else {
+      buttonText = "Uninstall";
+    }
 
     return WillPopScope(
       onWillPop: () async {
@@ -313,7 +371,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
           actions: [
             if (auth.isAdmin) ...[
               IconButton(
-                icon: const Icon(Icons.edit_rounded, color: _green),
+                icon: const Icon(Icons.edit_rounded, color: _purple),
                 tooltip: "Edit",
                 onPressed: () async {
                   final result = await Navigator.push(
@@ -383,7 +441,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                                   Text(
                                     currentApp.developer ?? "Unknown Developer",
                                     style: const TextStyle(
-                                      color: _green,
+                                      color: _purple,
                                       fontWeight: FontWeight.w600,
                                       fontSize: 14,
                                     ),
@@ -447,14 +505,17 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 18),
-
-                        // Install button
                         SizedBox(
                           width: double.infinity,
                           height: 50,
                           child: ElevatedButton.icon(
-                            onPressed: isDownloading ? null : installApp,
+                            onPressed: isDownloading
+                                ? null
+                                : (!isInstalled)
+                                ? installApp
+                                : (isUpdate)
+                                ? installApp
+                                : () => confirmUninstall(),
                             icon: isDownloading
                                 ? const SizedBox(
                                     height: 18,
@@ -466,14 +527,14 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                                   )
                                 : const Icon(Icons.download_rounded, size: 20),
                             label: Text(
-                              isDownloading ? "Downloading..." : "Install",
+                              isDownloading ? "Downloading..." : buttonText,
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: _green,
+                              backgroundColor: _purple,
                               foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
@@ -497,7 +558,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                         const SizedBox(height: 16),
                         if (loadingScreenshots)
                           const Center(
-                            child: CircularProgressIndicator(color: _green),
+                            child: CircularProgressIndicator(color: _purple),
                           )
                         else if (screenshots.isNotEmpty)
                           SizedBox(
@@ -611,7 +672,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: const BorderSide(
-                                color: _green,
+                                color: _purple,
                                 width: 1.8,
                               ),
                             ),
@@ -630,7 +691,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                                       ? null
                                       : submitRating,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: _green,
+                                    backgroundColor: _purple,
                                     foregroundColor: Colors.white,
                                     elevation: 0,
                                     shape: RoundedRectangleBorder(
@@ -731,7 +792,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                                     child: LinearProgressIndicator(
                                       value: count / total,
                                       backgroundColor: Colors.grey.shade100,
-                                      color: _green,
+                                      color: _purple,
                                       minHeight: 6,
                                     ),
                                   ),
@@ -758,7 +819,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
 
                         if (loadingRatings)
                           const Center(
-                            child: CircularProgressIndicator(color: _green),
+                            child: CircularProgressIndicator(color: _purple),
                           )
                         else if (ratings.isEmpty)
                           Text(
@@ -789,7 +850,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                                     children: [
                                       CircleAvatar(
                                         radius: 18,
-                                        backgroundColor: _green.withOpacity(
+                                        backgroundColor: _purple.withOpacity(
                                           0.15,
                                         ),
                                         backgroundImage:
@@ -803,7 +864,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                                                 rating.userName[0]
                                                     .toUpperCase(),
                                                 style: const TextStyle(
-                                                  color: _green,
+                                                  color: _purple,
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 13,
                                                 ),
@@ -919,7 +980,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: const Color(0xFF1DB954)),
+          Icon(icon, size: 12, color: const Color(0xFF6A1B9A)),
           const SizedBox(width: 5),
           Text(
             label,

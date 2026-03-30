@@ -34,7 +34,7 @@ class _AdminUploadScreenState extends State<AdminUploadScreen>
   bool uploading = false;
   bool get isEdit => widget.app != null;
 
-  static const _green = Color(0xFF1DB954);
+  static const _purple = Color(0xFF6A1B9A);
 
   late AnimationController _animCtrl;
   late Animation<double> _fadeAnim;
@@ -201,7 +201,7 @@ class _AdminUploadScreenState extends State<AdminUploadScreen>
           content: Text(
             isEdit ? "App updated successfully" : "App uploaded successfully",
           ),
-          backgroundColor: _green,
+          backgroundColor: _purple,
         ),
       );
       Navigator.pop(context, true);
@@ -239,12 +239,12 @@ class _AdminUploadScreenState extends State<AdminUploadScreen>
             Container(
               padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
-                color: _green..withValues(alpha: 0.10),
+                color: _purple..withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(9),
               ),
               child: Icon(
                 isEdit ? Icons.edit_rounded : Icons.cloud_upload_rounded,
-                color: _green,
+                color: _purple,
                 size: 18,
               ),
             ),
@@ -267,7 +267,7 @@ class _AdminUploadScreenState extends State<AdminUploadScreen>
               child: const Text(
                 "ADMIN",
                 style: TextStyle(
-                  color: _green,
+                  color: _purple,
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.5,
@@ -297,7 +297,7 @@ class _AdminUploadScreenState extends State<AdminUploadScreen>
                     BoxShadow(
                       blurRadius: 30,
                       offset: const Offset(0, 10),
-                      color: _green..withValues(alpha: 0.07),
+                      color: _purple..withValues(alpha: 0.07),
                     ),
                     BoxShadow(
                       blurRadius: 16,
@@ -318,7 +318,10 @@ class _AdminUploadScreenState extends State<AdminUploadScreen>
                       ),
                       decoration: const BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Color(0xFF1DB954), Color(0xFF17a349)],
+                          colors: [
+                            Color(0xFF6A1B9A), // main purple
+                            Color(0xFF4A148C), // darker purple
+                          ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -488,9 +491,9 @@ class _AdminUploadScreenState extends State<AdminUploadScreen>
                             child: ElevatedButton(
                               onPressed: uploading ? null : submit,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: _green,
+                                backgroundColor: _purple,
                                 foregroundColor: Colors.white,
-                                disabledBackgroundColor: _green.withValues(
+                                disabledBackgroundColor: _purple.withValues(
                                   alpha: 0.5,
                                 ),
                                 elevation: 0,
@@ -552,10 +555,10 @@ class _AdminUploadScreenState extends State<AdminUploadScreen>
         Container(
           padding: const EdgeInsets.all(7),
           decoration: BoxDecoration(
-            color: const Color(0xFF1DB954).withValues(alpha: 0.10),
+            color: const Color(0xFF6A1B9A).withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: const Color(0xFF1DB954), size: 16),
+          child: Icon(icon, color: const Color(0xFF6A1B9A), size: 16),
         ),
         const SizedBox(width: 10),
         Text(
@@ -610,7 +613,7 @@ class _AdminUploadScreenState extends State<AdminUploadScreen>
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF1DB954), width: 1.8),
+          borderSide: const BorderSide(color: Color(0xFF6A1B9A), width: 1.8),
         ),
       ),
     );
@@ -630,14 +633,14 @@ class _AdminUploadScreenState extends State<AdminUploadScreen>
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
           foregroundColor: selected
-              ? const Color(0xFF1DB954)
+              ? const Color(0xFF6A1B9A)
               : const Color(0xFF424242),
           backgroundColor: selected
-              ? const Color(0xFF1DB954).withValues(alpha: 0.05)
+              ? const Color(0xFF6A1B9A).withValues(alpha: 0.05)
               : const Color(0xFFF5FAF6),
           side: BorderSide(
             color: selected
-                ? const Color(0xFF1DB954).withValues(alpha: 0.5)
+                ? const Color(0xFF6A1B9A).withValues(alpha: 0.5)
                 : Colors.grey.shade200,
             width: selected ? 1.5 : 1,
           ),
@@ -652,7 +655,7 @@ class _AdminUploadScreenState extends State<AdminUploadScreen>
             Icon(
               selected ? Icons.check_circle_rounded : icon,
               size: 18,
-              color: selected ? const Color(0xFF1DB954) : Colors.grey.shade500,
+              color: selected ? const Color(0xFF6A1B9A) : Colors.grey.shade500,
             ),
             const SizedBox(width: 8),
             Flexible(
@@ -662,7 +665,7 @@ class _AdminUploadScreenState extends State<AdminUploadScreen>
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: selected
-                      ? const Color(0xFF1DB954)
+                      ? const Color(0xFF6A1B9A)
                       : Colors.grey.shade600,
                 ),
                 overflow: TextOverflow.ellipsis,

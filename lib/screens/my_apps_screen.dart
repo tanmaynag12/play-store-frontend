@@ -18,7 +18,7 @@ class _MyAppsScreenState extends State<MyAppsScreen>
   List<AppModel> apps = [];
   bool loading = true;
 
-  static const _green = Color(0xFF1DB954);
+  static const _purple = Color(0xFF6A1B9A);
 
   late AnimationController _animCtrl;
   late Animation<double> _fadeAnim;
@@ -76,7 +76,7 @@ class _MyAppsScreenState extends State<MyAppsScreen>
         ),
       ),
       body: loading
-          ? const Center(child: CircularProgressIndicator(color: _green))
+          ? const Center(child: CircularProgressIndicator(color: _purple))
           : apps.isEmpty
           ? Center(
               child: Column(
@@ -85,13 +85,13 @@ class _MyAppsScreenState extends State<MyAppsScreen>
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: _green.withValues(alpha: 0.08),
+                      color: _purple.withValues(alpha: 0.08),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.apps_outlined,
                       size: 48,
-                      color: _green,
+                      color: _purple,
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -165,7 +165,7 @@ class _MyAppsScreenState extends State<MyAppsScreen>
                                     ),
                                     child: const Icon(
                                       Icons.apps_rounded,
-                                      color: _green,
+                                      color: _purple,
                                     ),
                                   ),
                                 ),
@@ -192,7 +192,7 @@ class _MyAppsScreenState extends State<MyAppsScreen>
                                       app.developer ?? "Unknown Developer",
                                       style: const TextStyle(
                                         fontSize: 12,
-                                        color: _green,
+                                        color: _purple,
                                         fontWeight: FontWeight.w500,
                                       ),
                                       maxLines: 1,
@@ -220,7 +220,7 @@ class _MyAppsScreenState extends State<MyAppsScreen>
                                               const Icon(
                                                 Icons.download_rounded,
                                                 size: 12,
-                                                color: _green,
+                                                color: _purple,
                                               ),
                                               const SizedBox(width: 4),
                                               Text(

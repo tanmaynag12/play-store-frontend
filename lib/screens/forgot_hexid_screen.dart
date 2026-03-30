@@ -50,12 +50,12 @@ class _ForgotHexIdScreenState extends State<ForgotHexIdScreen>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFF1DB954).withValues(alpha: 0.12),
+                color: const Color(0xFF6A1B9A).withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.badge_rounded,
-                color: Color(0xFF1DB954),
+                color: Color(0xFF6A1B9A),
                 size: 20,
               ),
             ),
@@ -76,7 +76,7 @@ class _ForgotHexIdScreenState extends State<ForgotHexIdScreen>
                 color: const Color(0xFFF5FAF6),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: const Color(0xFF1DB954).withValues(alpha: 0.3),
+                  color: const Color(0xFF6A1B9A).withValues(alpha: 0.3),
                 ),
               ),
               child: SelectableText(
@@ -87,7 +87,7 @@ class _ForgotHexIdScreenState extends State<ForgotHexIdScreen>
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.4,
-                  color: Color(0xFF17a349),
+                  color: Color(0xFF6A1B9A),
                 ),
               ),
             ),
@@ -98,7 +98,7 @@ class _ForgotHexIdScreenState extends State<ForgotHexIdScreen>
             width: double.infinity,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1DB954),
+                backgroundColor: const Color(0xFF6A1B9A),
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -142,7 +142,7 @@ class _ForgotHexIdScreenState extends State<ForgotHexIdScreen>
               height: 260,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF1DB954).withOpacity(0.10),
+                color: const Color(0xFF6A1B9A).withOpacity(0.10),
               ),
             ),
           ),
@@ -154,7 +154,7 @@ class _ForgotHexIdScreenState extends State<ForgotHexIdScreen>
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF1DB954).withOpacity(0.06),
+                color: const Color(0xFF6A1B9A).withOpacity(0.06),
               ),
             ),
           ),
@@ -175,7 +175,7 @@ class _ForgotHexIdScreenState extends State<ForgotHexIdScreen>
                         BoxShadow(
                           blurRadius: 30,
                           offset: const Offset(0, 10),
-                          color: const Color(0xFF1DB954).withOpacity(0.08),
+                          color: const Color(0xFF6A1B9A).withOpacity(0.08),
                         ),
                         BoxShadow(
                           blurRadius: 16,
@@ -195,7 +195,7 @@ class _ForgotHexIdScreenState extends State<ForgotHexIdScreen>
                           ),
                           decoration: const BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [Color(0xFF1DB954), Color(0xFF17a349)],
+                              colors: [Color(0xFF6A1B9A), Color(0xFF4A148C)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
@@ -215,7 +215,7 @@ class _ForgotHexIdScreenState extends State<ForgotHexIdScreen>
                                 child: const Icon(
                                   Icons.manage_search_rounded,
                                   size: 32,
-                                  color: Color(0xFF1DB954),
+                                  color: Color(0xFF6A1B9A),
                                 ),
                               ),
                               const SizedBox(height: 14),
@@ -256,7 +256,7 @@ class _ForgotHexIdScreenState extends State<ForgotHexIdScreen>
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: const Color(
-                                        0xFF1DB954,
+                                        0xFF6A1B9A,
                                       ).withValues(alpha: 0.25),
                                     ),
                                   ),
@@ -264,7 +264,7 @@ class _ForgotHexIdScreenState extends State<ForgotHexIdScreen>
                                     children: const [
                                       Icon(
                                         Icons.info_outline_rounded,
-                                        color: Color(0xFF1DB954),
+                                        color: Color(0xFF6A1B9A),
                                         size: 18,
                                       ),
                                       SizedBox(width: 10),
@@ -308,7 +308,7 @@ class _ForgotHexIdScreenState extends State<ForgotHexIdScreen>
                                     ),
                                     prefixIcon: const Icon(
                                       Icons.email_rounded,
-                                      color: Color(0xFF1DB954),
+                                      color: Color(0xFF6A1B9A),
                                       size: 20,
                                     ),
                                     filled: true,
@@ -332,7 +332,7 @@ class _ForgotHexIdScreenState extends State<ForgotHexIdScreen>
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(14),
                                       borderSide: const BorderSide(
-                                        color: Color(0xFF1DB954),
+                                        color: Color(0xFF6A1B9A),
                                         width: 1.8,
                                       ),
                                     ),
@@ -365,10 +365,10 @@ class _ForgotHexIdScreenState extends State<ForgotHexIdScreen>
                                   child: ElevatedButton(
                                     onPressed: loading ? null : _getHexId,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF1DB954),
+                                      backgroundColor: const Color(0xFF6A1B9A),
                                       foregroundColor: Colors.white,
                                       disabledBackgroundColor: const Color(
-                                        0xFF1DB954,
+                                        0xFF6A1B9A,
                                       ).withValues(alpha: 0.5),
                                       elevation: 0,
                                       shadowColor: Colors.transparent,
@@ -412,7 +412,7 @@ class _ForgotHexIdScreenState extends State<ForgotHexIdScreen>
                                       onPressed: () => Navigator.pop(context),
                                       style: TextButton.styleFrom(
                                         foregroundColor: const Color(
-                                          0xFF1DB954,
+                                          0xFF6A1B9A,
                                         ),
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 6,
