@@ -201,7 +201,9 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse("${ApiConfig.baseUrl}/api/apps/${currentApp.id}/download"),
+        Uri.parse(
+          "${ApiConfig.baseUrl}/api/apps/${currentApp.id}/download?platform=android",
+        ),
         headers: {"Authorization": "Bearer ${auth.token}"},
       );
 
@@ -240,6 +242,38 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
     }
 
     setState(() => isDownloading = false);
+  }
+
+  Future<void> downloadFile(String platform) async {
+    final auth = context.read<AuthProvider>();
+
+    try {
+      final response = await http.get(
+        Uri.parse(
+          "${ApiConfig.baseUrl}/api/apps/${currentApp.id}/download?platform=$platform",
+        ),
+        headers: {"Authorization": "Bearer ${auth.token}"},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final url = data["download_url"];
+
+        final uri = Uri.parse(url);
+
+        if (kIsWeb) {
+          await launchUrl(uri, mode: LaunchMode.platformDefault);
+        } else {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      } else {
+        throw Exception("Download failed");
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Download failed")));
+    }
   }
 
   Future<void> fetchRatings() async {
@@ -505,48 +539,113 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                           ),
                         ),
 
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton.icon(
-                            onPressed: isDownloading
-                                ? null
-                                : (!isInstalled)
-                                ? installApp
-                                : (isUpdate)
-                                ? installApp
-                                : () => confirmUninstall(),
-                            icon: isDownloading
-                                ? const SizedBox(
-                                    height: 18,
-                                    width: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
+                        const SizedBox(height: 20),
+
+                        Column(
+                          children: [
+                            if (currentApp.androidUrl != null &&
+                                currentApp.androidUrl!.isNotEmpty)
+                              SizedBox(
+                                width: double.infinity,
+                                height: 50,
+                                child: ElevatedButton.icon(
+                                  onPressed: isDownloading
+                                      ? null
+                                      : (!isInstalled)
+                                      ? installApp
+                                      : (isUpdate)
+                                      ? installApp
+                                      : () => confirmUninstall(),
+                                  icon: isDownloading
+                                      ? const SizedBox(
+                                          height: 18,
+                                          width: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const Icon(Icons.android, size: 20),
+                                  label: Text(
+                                    isDownloading
+                                        ? "Downloading..."
+                                        : buttonText,
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
                                     ),
-                                  )
-                                : const Icon(Icons.download_rounded, size: 20),
-                            label: Text(
-                              isDownloading ? "Downloading..." : buttonText,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: _purple,
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _purple,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
+
+                            if (currentApp.windowsUrl != null &&
+                                currentApp.windowsUrl!.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 50,
+                                child: ElevatedButton.icon(
+                                  onPressed: () => downloadFile("windows"),
+                                  icon: const Icon(Icons.window),
+                                  label: const Text(
+                                    "Download for Windows",
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blueGrey,
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
+                            ],
+
+                            if (currentApp.linuxUrl != null &&
+                                currentApp.linuxUrl!.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 50,
+                                child: ElevatedButton.icon(
+                                  onPressed: () => downloadFile("linux"),
+                                  icon: const Icon(Icons.code),
+                                  label: const Text(
+                                    "Download for Linux",
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.black87,
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 16),
 
                   // ── Screenshots ────────────────────────────────────

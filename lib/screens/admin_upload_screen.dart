@@ -30,6 +30,8 @@ class _AdminUploadScreenState extends State<AdminUploadScreen>
   PlatformFile? iconFile;
   List<PlatformFile> screenshotFiles = [];
   PlatformFile? apkFile;
+  PlatformFile? windowsFile;
+  PlatformFile? linuxFile;
 
   bool uploading = false;
   bool get isEdit => widget.app != null;
@@ -104,6 +106,30 @@ class _AdminUploadScreenState extends State<AdminUploadScreen>
       withData: true,
     );
     if (result != null) setState(() => apkFile = result.files.first);
+  }
+
+  Future<void> pickWindowsFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['exe'],
+      withData: true,
+    );
+
+    if (result != null) {
+      setState(() => windowsFile = result.files.first);
+    }
+  }
+
+  Future<void> pickLinuxFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['deb', 'appimage'],
+      withData: true,
+    );
+
+    if (result != null) {
+      setState(() => linuxFile = result.files.first);
+    }
   }
 
   Future<void> submit() async {
@@ -185,6 +211,37 @@ class _AdminUploadScreenState extends State<AdminUploadScreen>
       } else {
         request.files.add(
           await http.MultipartFile.fromPath("apk", apkFile!.path!),
+        );
+      }
+    }
+    if (windowsFile != null) {
+      if (kIsWeb) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            "windows",
+            windowsFile!.bytes!,
+            filename: windowsFile!.name,
+          ),
+        );
+      } else {
+        request.files.add(
+          await http.MultipartFile.fromPath("windows", windowsFile!.path!),
+        );
+      }
+    }
+
+    if (linuxFile != null) {
+      if (kIsWeb) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            "linux",
+            linuxFile!.bytes!,
+            filename: linuxFile!.name,
+          ),
+        );
+      } else {
+        request.files.add(
+          await http.MultipartFile.fromPath("linux", linuxFile!.path!),
         );
       }
     }
@@ -479,6 +536,28 @@ class _AdminUploadScreenState extends State<AdminUploadScreen>
                             onPressed: uploading ? null : pickApk,
                             selected: apkFile != null,
                             selectedLabel: apkFile?.name ?? "APK selected",
+                            fullWidth: true,
+                          ),
+                          const SizedBox(height: 14),
+
+                          _assetButton(
+                            icon: Icons.window,
+                            label: "Pick Windows (.exe)",
+                            onPressed: uploading ? null : pickWindowsFile,
+                            selected: windowsFile != null,
+                            selectedLabel:
+                                windowsFile?.name ?? "Windows selected",
+                            fullWidth: true,
+                          ),
+
+                          const SizedBox(height: 14),
+
+                          _assetButton(
+                            icon: Icons.code,
+                            label: "Pick Linux (.deb/.appimage)",
+                            onPressed: uploading ? null : pickLinuxFile,
+                            selected: linuxFile != null,
+                            selectedLabel: linuxFile?.name ?? "Linux selected",
                             fullWidth: true,
                           ),
 

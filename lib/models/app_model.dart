@@ -14,6 +14,9 @@ class AppModel {
   final int totalReviews;
   final int downloadCount;
   final int? installedVersionCode;
+  final String? androidUrl;
+  final String? windowsUrl;
+  final String? linuxUrl;
 
   AppModel({
     required this.id,
@@ -31,6 +34,9 @@ class AppModel {
     this.averageRating,
     this.totalReviews = 0,
     this.downloadCount = 0,
+    this.androidUrl,
+    this.windowsUrl,
+    this.linuxUrl,
   });
 
   factory AppModel.fromJson(Map<String, dynamic> json) {
@@ -38,7 +44,7 @@ class AppModel {
       id: json['id'],
       name: json['name'],
       description: json['description'] ?? "",
-      iconUrl: json['icon_url'],
+      iconUrl: json['icon_url'] ?? "",
       version: json['version'],
       size: json['size'],
       developer: json['developer'],
@@ -50,8 +56,13 @@ class AppModel {
       downloadCount: json['download_count'] ?? 0,
       packageName: json['package_name'],
       createdAt: json['created_at'],
-      versionCode: json['version_code'],
-      installedVersionCode: json["installed_version_code"],
+      versionCode: json['version_code'] ?? 0,
+      installedVersionCode: json["installed_version_code"] != null
+          ? int.tryParse(json["installed_version_code"].toString())
+          : null,
+      androidUrl: json['android_url'],
+      windowsUrl: json['windows_url'],
+      linuxUrl: json['linux_url'],
     );
   }
 }
